@@ -59,8 +59,15 @@ class AcademicRecord(BaseModel):
     abstract: Optional[str] = None
 
 
+class ScoredRecord(BaseModel):
+    """Retrieved record after deterministic relevance scoring."""
+
+    record: AcademicRecord
+    relevance_score: float = Field(ge=0.0, le=1.0)
+
+
 class RankedEvidence(BaseModel):
-    """Evidence item after processing and ranking."""
+    """Evidence item after processing, ranking, and summarisation."""
 
     record: AcademicRecord
     relevance_score: float = Field(ge=0.0, le=1.0)
@@ -82,6 +89,7 @@ class AgentState(BaseModel):
     goal: ResearchGoal
     plan: Optional[ResearchPlan] = None
     retrieved_records: List[AcademicRecord] = Field(default_factory=list)
+    scored_records: List[ScoredRecord] = Field(default_factory=list)
     ranked_evidence: List[RankedEvidence] = Field(default_factory=list)
     validation: Optional[ValidationResult] = None
     approved_for_export: bool = False
