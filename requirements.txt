@@ -1,0 +1,2 @@
+# Runtime dependencies will be pinned as implementation begins.
+# Target environment: Python 3.11+
