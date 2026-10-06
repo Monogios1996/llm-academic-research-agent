@@ -162,14 +162,23 @@ class ResearchWorkflow:
         }
 
     def _retrieve(self, state: WorkflowState) -> dict:
+        # A retrieval retry should change the search effort rather than repeat the
+        # same request unchanged. The bounded retry therefore expands the result
+        # window while preserving the same scholarly sources and sub-question.
+        retry_count = state.get("retry_count", 0)
+        effective_limit = self.retrieval_limit * (retry_count + 1)
         records = retrieve_from_sources(
             state["current_subtask"],
             self.retrievers,
-            limit_per_source=self.retrieval_limit,
+            limit_per_source=effective_limit,
         )
         return {
             "retrieved_records": records,
-            "audit_log": self._log(state, f"Retrieved {len(records)} record(s)."),
+            "audit_log": self._log(
+                state,
+                f"Retrieved {len(records)} record(s) "
+                f"(limit {effective_limit} per source).",
+            ),
         }
 
     def _process(self, state: WorkflowState) -> dict:
@@ -178,6 +187,23 @@ class ResearchWorkflow:
             state["current_subtask"],
             top_k=self.top_k,
         )
+
+        # When validation specifically requests re-processing, weak items are
+        # removed using the validator's explicit threshold. This makes the retry
+        # materially different from the first pass. If too few items remain,
+        # the next validation step redirects the workflow to retrieval.
+        validation = state.get("validation")
+        if (
+            state.get("retry_count", 0) > 0
+            and validation is not None
+            and validation.retry_target == "processing"
+        ):
+            scored = [
+                item
+                for item in scored
+                if item.relevance_score >= self.validator.min_relevance_score
+            ]
+
         return {
             "scored_records": scored,
             "audit_log": self._log(state, f"Ranked {len(scored)} record(s)."),
