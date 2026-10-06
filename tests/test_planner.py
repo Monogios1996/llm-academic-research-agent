@@ -90,3 +90,35 @@ def test_planner_rejects_invalid_structured_plan() -> None:
 
     with pytest.raises(PlanningError, match="invalid research plan"):
         planner.create_plan(ResearchGoal(topic="academic planning agents"))
+
+
+def test_replanning_feedback_is_visible_in_prompt() -> None:
+    gateway = FakeGateway(
+        """
+        {
+          "subtasks": [
+            {
+              "id":"q1",
+              "question":"How can traceability be improved?",
+              "search_terms":["traceability", "academic evidence"]
+            },
+            {
+              "id":"q2",
+              "question":"Which identifiers support source verification?",
+              "search_terms":["DOI", "source verification"]
+            }
+          ],
+          "rationale":"The revised plan addresses the validation problem."
+        }
+        """
+    )
+    planner = Planner(gateway=gateway)
+
+    planner.create_plan(
+        ResearchGoal(topic="academic planning agents"),
+        feedback=["Traceable evidence ratio is below the required threshold."],
+    )
+
+    assert gateway.last_prompt is not None
+    assert "Previous validation feedback" in gateway.last_prompt
+    assert "Traceable evidence ratio" in gateway.last_prompt
