@@ -30,9 +30,18 @@ class Planner:
         self.gateway = gateway
         self.max_subtasks = max_subtasks
 
-    def create_plan(self, goal: ResearchGoal) -> ResearchPlan:
-        """Ask the model for a structured plan and validate the result."""
-        raw_output = self.gateway.generate(self._build_prompt(goal))
+    def create_plan(
+        self,
+        goal: ResearchGoal,
+        feedback: list[str] | None = None,
+    ) -> ResearchPlan:
+        """Ask the model for a structured plan and validate the result.
+
+        Validation feedback is optional and is used only during bounded
+        re-planning. Keeping feedback explicit makes the escalation path
+        inspectable instead of silently changing planner behaviour.
+        """
+        raw_output = self.gateway.generate(self._build_prompt(goal, feedback))
 
         try:
             payload: dict[str, Any] = json.loads(raw_output)
@@ -54,9 +63,19 @@ class Planner:
 
         return plan
 
-    def _build_prompt(self, goal: ResearchGoal) -> str:
+    def _build_prompt(
+        self,
+        goal: ResearchGoal,
+        feedback: list[str] | None = None,
+    ) -> str:
         """Construct a constrained prompt that exposes planning before execution."""
         objective = goal.objective or "Produce a traceable academic research package."
+        feedback_text = ""
+        if feedback:
+            feedback_text = (
+                "\n\nPrevious validation feedback to address during re-planning:\n- "
+                + "\n- ".join(feedback)
+            )
 
         return f"""
 You are the planning component of an academic research agent.
@@ -65,7 +84,7 @@ Research topic:
 {goal.topic}
 
 Research objective:
-{objective}
+{objective}{feedback_text}
 
 Decompose the goal into between 2 and {self.max_subtasks} focused, searchable
 academic sub-questions. Each subtask must be useful for structured scholarly
