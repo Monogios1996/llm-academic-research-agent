@@ -28,7 +28,7 @@ class LiveSettings:
     def from_env(cls) -> "LiveSettings":
         """Load configuration from environment variables."""
         hf_token = os.getenv("HF_TOKEN", "").strip()
-        hf_model = os.getenv("HF_MODEL", "google/gemma-2-2b-it").strip()
+        hf_model = os.getenv("HF_MODEL", "openai/gpt-oss-20b:fastest").strip()
         openalex_api_key = os.getenv("OPENALEX_API_KEY", "").strip()
         crossref_email = os.getenv("CROSSREF_EMAIL", "").strip() or None
 
