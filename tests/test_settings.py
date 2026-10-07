@@ -26,7 +26,7 @@ def test_live_settings_uses_small_default_model(monkeypatch) -> None:
 
     settings = LiveSettings.from_env()
 
-    assert settings.hf_model == "google/gemma-2-2b-it"
+    assert settings.hf_model == "openai/gpt-oss-20b:fastest"
 
 
 def test_live_settings_reject_missing_secrets(monkeypatch) -> None:
