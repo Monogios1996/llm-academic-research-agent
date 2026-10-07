@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The current prototype implements the main planning, retrieval, processing, summarisation, validation, and orchestration stages from the Unit 6 design proposal. Human approval, export, persistence, live model integration, and the final demonstration interface remain to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, and a live Hugging Face provider gateway. Persistence, approval/export, and the final demonstration interface remain to be completed.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -12,9 +12,9 @@ Development is intentionally incremental so that Git history, tests, and executi
 
 The system accepts a high-level academic research goal and coordinates six logical responsibilities:
 
-1. **Orchestrator / Supervisor** – maintains workflow state, routing, bounded retries, and termination.
+1. **Orchestrator / Supervisor** – maintains workflow state, routing, bounded retries, re-planning, and termination.
 2. **Planner** – decomposes the research goal into searchable sub-questions.
-3. **Academic Retrieval** – retrieves scholarly metadata from structured academic APIs.
+3. **Academic Retrieval** – retrieves scholarly metadata from Crossref and OpenAlex.
 4. **Processing / Ranking** – normalises, deduplicates, and ranks retrieved evidence.
 5. **Evidence Validator** – checks sufficiency, relevance, and source traceability.
 6. **Storage / Export** – planned final stage for approved Markdown and machine-readable outputs.
@@ -24,9 +24,9 @@ Current control flow:
 ```text
 Goal
   ↓
-Planner
+Planner (LLM)
   ↓
-Academic Retrieval
+Crossref + OpenAlex retrieval
   ↓
 Processing / Ranking
   ↓
@@ -38,54 +38,117 @@ Evidence Validation
   └─ retries exhausted ─→ bounded re-planning → clean failure if unresolved
 ```
 
-The prototype currently stops at **human approval** after all subtasks validate. Export is deliberately not performed automatically because the original design specifies approval before a consequential final action.
+The workflow deliberately stops at **human approval** after all subtasks validate. Export is not performed automatically because the original design specifies approval before a consequential final action.
 
 ## Technical approach
 
 - Python 3.11+
 - LangGraph for explicit stateful orchestration
 - Pydantic for validated domain and inter-agent data models
+- Hugging Face Inference Providers for live LLM planning and summarisation
 - Crossref and OpenAlex for structured scholarly metadata
 - deterministic deduplication and lexical relevance ranking before LLM summarisation
 - pytest for automated unit and workflow tests
-- GitHub Actions for reproducible test execution
+- GitHub Actions for reproducible automated and live-provider verification
 
-The LLM is accessed through a provider-independent gateway so that a hosted Hugging Face model can be used without coupling the Planner or Summariser to one provider. Unit tests use deterministic test doubles so application logic can be tested without consuming model credits or depending on network availability.
+The LLM is accessed through a provider-independent gateway so that the Planner and Summariser do not depend directly on one provider client. Automated tests use deterministic test doubles so core application logic can be verified without consuming model credits or depending on network availability.
 
 ## Repository structure
 
 ```text
 .
-├── .github/workflows/     # reproducible CI test workflow
+├── .github/workflows/     # automated tests and manual live-provider checks
 ├── src/research_agent/    # application source code
 ├── tests/                 # unit and orchestration tests
 ├── docs/                  # design and implementation notes
 ├── evidence/              # test results, example runs, logs, screenshots
+├── .env.example           # credential names only; never real secrets
 ├── requirements.txt
 └── README.md
 ```
+
+## Installation
+
+Create and activate a Python 3.11+ virtual environment, then install dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+The source directory must be on `PYTHONPATH` when running directly from the repository.
+
+## Live provider configuration
+
+Set these environment variables before live execution:
+
+- `HF_TOKEN` – Hugging Face fine-grained token with permission to make Inference Providers calls.
+- `HF_MODEL` – optional model override. The development default is `google/gemma-2-2b-it`.
+- `OPENALEX_API_KEY` – OpenAlex API key.
+- `CROSSREF_EMAIL` – recommended identification address for Crossref polite API access.
+
+An example containing placeholder values is provided in `.env.example`. Real credentials must never be committed to the repository.
+
+## Live provider smoke test
+
+Before running a complete multi-step agent workflow, verify each external provider independently:
+
+```bash
+PYTHONPATH=src python -m research_agent.live_smoke
+```
+
+The smoke test performs one small Hugging Face generation and one-record searches against Crossref and OpenAlex. This deliberately limits model/API usage while establishing that credentials, connectivity, and response parsing are working.
+
+A manual GitHub Actions workflow named **live-provider-smoke** provides the same check in a clean hosted environment after the repository secrets have been configured.
+
+## Running the live research agent
+
+After the provider smoke test succeeds:
+
+```bash
+PYTHONPATH=src python -m research_agent.main --topic "LLM planning agents in academic research"
+```
+
+An optional objective can also be supplied:
+
+```bash
+PYTHONPATH=src python -m research_agent.main \
+  --topic "LLM planning agents in academic research" \
+  --objective "Identify current architectures, evaluation approaches, and limitations."
+```
+
+The CLI displays the generated plan, validated evidence, concise grounded summaries, and the workflow audit trail. A successful run ends at `awaiting_approval`; no export is performed at this stage.
 
 ## Testing status
 
 Recorded development evidence is stored under `evidence/test-results/`.
 
-The first test run covered models, planning, mocked academic retrieval, and processing/ranking. A later run extended coverage to grounded summarisation and evidence validation. LangGraph orchestration tests cover successful completion, targeted retry, bounded re-planning, and clean failure. The full automated suite has now been verified in GitHub Actions on Python 3.11, with 30 tests passing. The corresponding run evidence is stored under `evidence/test-results/`.
+The automated suite covers:
 
-## Running the project
+- Pydantic state and message validation;
+- planner output validation and re-planning feedback;
+- mocked Crossref/OpenAlex normalisation and failure handling;
+- deterministic deduplication and ranking;
+- LLM summarisation boundaries;
+- evidence validation and targeted remediation;
+- LangGraph success, retry, re-planning, and failure routes;
+- live dependency wiring without making network calls.
 
-The final runnable interface has not yet been implemented. The current codebase is a development prototype and should not yet be treated as the final submission package. Complete installation, configuration, model credentials, and execution instructions will be added once live integration and the interface are implemented.
+The LangGraph milestone was verified in GitHub Actions on Python 3.11 with **30 tests passing**. Live-provider verification is intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
-External libraries, frameworks, models, APIs, and academic sources used by the implementation will be acknowledged in the final README and, where appropriate, in code commentary.
+External libraries, frameworks, models, APIs, and academic sources used by the implementation are acknowledged here and, where appropriate, in code commentary.
 
-Code comments focus on **why** design and implementation choices were made rather than simply paraphrasing what individual lines do. This is intended to keep implementation decisions traceable to the submitted design and the assessment requirements.
+Code comments focus on **why** design and implementation choices were made rather than simply paraphrasing what individual lines do. This keeps implementation decisions traceable to the submitted design and the assessment requirements.
 
-Current external technologies include:
+Current external technologies and documentation include:
 
 - LangGraph / LangChain documentation: https://docs.langchain.com/oss/python/langgraph/overview
+- Hugging Face Inference Providers: https://huggingface.co/docs/inference-providers/
 - Crossref REST API: https://www.crossref.org/documentation/retrieve-metadata/rest-api/
 - OpenAlex API: https://developers.openalex.org/api-reference/introduction
 - Pydantic: https://docs.pydantic.dev/
 - httpx: https://www.python-httpx.org/
 - pytest: https://docs.pytest.org/
+
+Academic references from the Unit 6 design proposal will be carried into the final submission documentation where they support design and implementation decisions.
