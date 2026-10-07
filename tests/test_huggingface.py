@@ -42,7 +42,10 @@ def test_huggingface_gateway_surfaces_http_failure() -> None:
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
-    with pytest.raises(LLMProviderError, match="inference request failed"):
+    with pytest.raises(
+        LLMProviderError,
+        match=r"inference request failed with HTTP 401.*unauthorised",
+    ):
         gateway.generate("test")
 
 
