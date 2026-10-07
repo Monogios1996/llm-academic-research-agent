@@ -23,6 +23,7 @@ def _subtask() -> ResearchSubtask:
 def test_crossref_retrieval_normalises_metadata() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.params["query.bibliographic"] == "LLM planning agents evaluation"
+        assert "llm-academic-research-agent/0.1" in request.headers["User-Agent"]
         return httpx.Response(
             200,
             json={
