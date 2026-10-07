@@ -41,6 +41,10 @@ class CrossrefRetriever:
         self.email = email
         self._owns_client = client is None
         self.client = client or httpx.Client(timeout=timeout)
+        self.user_agent = (
+            "llm-academic-research-agent/0.1"
+            + (f" (mailto:{email})" if email else "")
+        )
 
     def search(self, subtask: ResearchSubtask, limit: int = 5) -> list[AcademicRecord]:
         if limit < 1:
@@ -55,7 +59,11 @@ class CrossrefRetriever:
             params["mailto"] = self.email
 
         try:
-            response = self.client.get(self.BASE_URL, params=params)
+            response = self.client.get(
+                self.BASE_URL,
+                params=params,
+                headers={"User-Agent": self.user_agent},
+            )
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
