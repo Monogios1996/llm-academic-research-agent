@@ -1,14 +1,81 @@
-"""Application entry point for the academic research planning agent.
+"""Command-line entry point for the live research-agent prototype.
 
-The first development increment intentionally keeps the entry point minimal.
-Agent orchestration will be introduced in later commits so architectural
-changes remain visible in repository history.
+The CLI intentionally ends at the human-approval boundary. Export is not
+performed here because the Unit 6 design requires explicit approval before the
+final consequential action.
 """
+
+from __future__ import annotations
+
+import argparse
+
+from research_agent.bootstrap import build_live_workflow
+from research_agent.models import ResearchGoal
+from research_agent.settings import ConfigurationError, LiveSettings
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run the LLM-powered academic research planning agent."
+    )
+    parser.add_argument(
+        "--topic",
+        required=True,
+        help="High-level academic research topic or question.",
+    )
+    parser.add_argument(
+        "--objective",
+        default=None,
+        help="Optional research objective used by the Planner.",
+    )
+    return parser
 
 
 def main() -> None:
-    """Start the prototype application."""
-    print("LLM Academic Research Agent - project foundation ready")
+    args = _parser().parse_args()
+
+    try:
+        settings = LiveSettings.from_env()
+    except ConfigurationError as exc:
+        raise SystemExit(f"Configuration error: {exc}") from exc
+
+    workflow = build_live_workflow(settings)
+    result = workflow.run(
+        ResearchGoal(topic=args.topic, objective=args.objective)
+    )
+
+    print("\n=== Research Agent Result ===")
+    print(f"Status: {result['status']}")
+    print(f"Model: {settings.hf_model}")
+
+    plan = result.get("plan")
+    if plan is not None:
+        print("\nPlan:")
+        for subtask in plan.subtasks:
+            print(f"- {subtask.id}: {subtask.question}")
+
+    evidence = result.get("all_evidence", [])
+    print(f"\nValidated evidence items: {len(evidence)}")
+    for index, item in enumerate(evidence, start=1):
+        record = item.record
+        identifier = record.doi or str(record.url or "No DOI/URL")
+        print(f"\n{index}. {record.title}")
+        print(f"   Source: {record.source}")
+        print(f"   Identifier: {identifier}")
+        print(f"   Relevance: {item.relevance_score:.2f}")
+        print(f"   Summary: {item.summary}")
+
+    print("\nAudit trail:")
+    for event in result.get("audit_log", []):
+        print(f"- {event}")
+
+    if result["status"] == "awaiting_approval":
+        print(
+            "\nThe workflow has stopped at the required human-approval boundary. "
+            "No export has been performed."
+        )
+    elif result["status"] == "failed":
+        print(f"\nFailure reason: {result.get('failure_reason', 'Unknown')}")
 
 
 if __name__ == "__main__":
