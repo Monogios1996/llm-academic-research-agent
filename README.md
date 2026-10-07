@@ -82,7 +82,7 @@ The source directory must be on `PYTHONPATH` when running directly from the repo
 Set these environment variables before live execution:
 
 - `HF_TOKEN` – Hugging Face fine-grained token with permission to make Inference Providers calls.
-- `HF_MODEL` – optional model override. The development default is `google/gemma-2-2b-it`.
+- `HF_MODEL` – optional model override. The development default is `openai/gpt-oss-20b:fastest`.
 - `OPENALEX_API_KEY` – OpenAlex API key.
 - `CROSSREF_EMAIL` – recommended identification address for Crossref polite API access.
 
