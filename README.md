@@ -69,7 +69,7 @@ The LLM is accessed through a provider-independent gateway so that a hosted Hugg
 
 Recorded development evidence is stored under `evidence/test-results/`.
 
-The first test run covered models, planning, mocked academic retrieval, and processing/ranking. A later run extended coverage to grounded summarisation and evidence validation. LangGraph orchestration tests have now been added to cover successful completion, targeted retry, bounded re-planning, and clean failure; CI verification of this new stage is the next execution checkpoint.
+The first test run covered models, planning, mocked academic retrieval, and processing/ranking. A later run extended coverage to grounded summarisation and evidence validation. LangGraph orchestration tests cover successful completion, targeted retry, bounded re-planning, and clean failure. The full automated suite has now been verified in GitHub Actions on Python 3.11, with 30 tests passing. The corresponding run evidence is stored under `evidence/test-results/`.
 
 ## Running the project
 
