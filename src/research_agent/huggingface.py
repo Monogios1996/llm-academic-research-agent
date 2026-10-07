@@ -69,6 +69,14 @@ class HuggingFaceGateway(LLMGateway):
             response = self.client.post(self.BASE_URL, json=payload, headers=headers)
             response.raise_for_status()
             data: dict[str, Any] = response.json()
+        except httpx.HTTPStatusError as exc:
+            # Include a bounded provider response so configuration/model errors
+            # are diagnosable from CI without exposing request headers or tokens.
+            detail = exc.response.text.strip().replace("\n", " ")[:500]
+            raise LLMProviderError(
+                f"Hugging Face inference request failed with HTTP "
+                f"{exc.response.status_code}: {detail or 'no response detail'}"
+            ) from exc
         except (httpx.HTTPError, ValueError) as exc:
             raise LLMProviderError("Hugging Face inference request failed") from exc
 
