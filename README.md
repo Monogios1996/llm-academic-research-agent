@@ -133,7 +133,7 @@ The automated suite covers:
 - LangGraph success, retry, re-planning, and failure routes;
 - live dependency wiring without making network calls.
 
-The LangGraph milestone was verified in GitHub Actions on Python 3.11 with **30 tests passing**. Live-provider verification is intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. After adding the live-provider gateway, runtime configuration, CLI wiring, and smoke-test infrastructure, the full automated suite was re-run successfully with **38 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
