@@ -1,8 +1,7 @@
 """Environment-based configuration for live provider execution.
 
 Secrets are read at runtime and are never stored in source control. Hosted
-Hugging Face inference remains the primary path; an optional local
-OpenAI-compatible fallback can be enabled explicitly for resilience.
+Hugging Face inference remains the primary path; an optional local Ollama fallback can be enabled explicitly for resilience.
 """
 
 from __future__ import annotations
@@ -40,7 +39,7 @@ class LiveSettings:
     crossref_email: str | None = None
     local_llm_enabled: bool = False
     local_llm_model: str = "qwen3:4b"
-    local_llm_base_url: str = "http://127.0.0.1:11434/v1/chat/completions"
+    local_llm_base_url: str = "http://127.0.0.1:11434/api/chat"
 
     @classmethod
     def from_env(cls) -> "LiveSettings":
@@ -53,7 +52,7 @@ class LiveSettings:
         local_llm_model = os.getenv("LOCAL_LLM_MODEL", "qwen3:4b").strip()
         local_llm_base_url = os.getenv(
             "LOCAL_LLM_BASE_URL",
-            "http://127.0.0.1:11434/v1/chat/completions",
+            "http://127.0.0.1:11434/api/chat",
         ).strip()
 
         missing = []
