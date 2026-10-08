@@ -29,7 +29,7 @@ from research_agent.models import (
     ValidationResult,
 )
 from research_agent.planner import Planner
-from research_agent.processing import process_records
+from research_agent.processing import deduplicate_evidence, process_records
 from research_agent.retrieval import AcademicRetriever, retrieve_from_sources
 from research_agent.summarisation import EvidenceSummariser
 from research_agent.validation import EvidenceValidator
@@ -259,15 +259,22 @@ class ResearchWorkflow:
 
     def _advance(self, state: WorkflowState) -> dict:
         next_index = state["subtask_index"] + 1
-        accumulated = state.get("all_evidence", []) + state["ranked_evidence"]
+        combined = state.get("all_evidence", []) + state["ranked_evidence"]
+        accumulated = deduplicate_evidence(combined)
+        duplicates_removed = len(combined) - len(accumulated)
+
+        message = f"Accepted evidence for subtask {state['current_subtask'].id}."
+        if duplicates_removed:
+            message += (
+                f" Removed {duplicates_removed} duplicate evidence item(s) "
+                "during final aggregation."
+            )
+
         return {
             "subtask_index": next_index,
             "all_evidence": accumulated,
             "retry_count": 0,
-            "audit_log": self._log(
-                state,
-                f"Accepted evidence for subtask {state['current_subtask'].id}.",
-            ),
+            "audit_log": self._log(state, message),
         }
 
     def _route_after_advance(
