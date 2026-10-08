@@ -21,7 +21,7 @@ def test_live_settings_load_required_values(monkeypatch) -> None:
     assert settings.local_llm_model == "qwen3:4b"
     assert (
         settings.local_llm_base_url
-        == "http://127.0.0.1:11434/v1/chat/completions"
+        == "http://127.0.0.1:11434/api/chat"
     )
 
 
@@ -53,14 +53,14 @@ def test_live_settings_enables_local_fallback(monkeypatch) -> None:
     monkeypatch.setenv("LOCAL_LLM_MODEL", "local-test-model")
     monkeypatch.setenv(
         "LOCAL_LLM_BASE_URL",
-        "http://localhost:9999/v1/chat/completions",
+        "http://localhost:9999/api/chat",
     )
 
     settings = LiveSettings.from_env()
 
     assert settings.local_llm_enabled is True
     assert settings.local_llm_model == "local-test-model"
-    assert settings.local_llm_base_url.endswith("/v1/chat/completions")
+    assert settings.local_llm_base_url.endswith("/api/chat")
 
 
 def test_live_settings_rejects_invalid_local_fallback_flag(monkeypatch) -> None:
