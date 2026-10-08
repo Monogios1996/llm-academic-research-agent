@@ -100,14 +100,17 @@ def main() -> None:
                 "Approve export of the validated research package? [y/N]: "
             ).strip().lower()
             if decision in {"y", "yes"}:
+                model_label = settings.hf_model
+                if isinstance(gateway, FailoverGateway) and gateway.fallback_count > 0:
+                    model_label = (
+                        f"{settings.hf_model} (primary); "
+                        f"{settings.local_llm_model} "
+                        f"(fallback used {gateway.fallback_count} call(s))"
+                    )
+
                 paths = export_research_package(
                     result,
-                    model=(
-                        settings.local_llm_model
-                        if isinstance(gateway, FailoverGateway)
-                        and gateway.fallback_count > 0
-                        else settings.hf_model
-                    ),
+                    model=model_label,
                     output_dir=args.output_dir,
                     approved=True,
                 )
