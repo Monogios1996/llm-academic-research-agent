@@ -159,7 +159,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, and the local-fallback stage adds dedicated failover and local-gateway coverage. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, and the local-fallback stage to **51 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
