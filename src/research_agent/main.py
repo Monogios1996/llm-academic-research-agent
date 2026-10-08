@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 
 from research_agent.bootstrap import build_live_workflow
+from research_agent.exporter import export_research_package
 from research_agent.models import ResearchGoal
 from research_agent.settings import ConfigurationError, LiveSettings
 
@@ -27,6 +28,19 @@ def _parser() -> argparse.ArgumentParser:
         "--objective",
         default=None,
         help="Optional research objective used by the Planner.",
+    )
+    parser.add_argument(
+        "--prompt-for-approval",
+        action="store_true",
+        help=(
+            "After displaying validated evidence, ask for explicit human "
+            "approval before exporting Markdown/JSON/CSV files."
+        ),
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="outputs",
+        help="Directory used for approved exports (default: outputs).",
     )
     return parser
 
@@ -71,9 +85,30 @@ def main() -> None:
 
     if result["status"] == "awaiting_approval":
         print(
-            "\nThe workflow has stopped at the required human-approval boundary. "
-            "No export has been performed."
+            "\nThe workflow has stopped at the required human-approval boundary."
         )
+
+        if args.prompt_for_approval:
+            decision = input(
+                "Approve export of the validated research package? [y/N]: "
+            ).strip().lower()
+            if decision in {"y", "yes"}:
+                paths = export_research_package(
+                    result,
+                    model=settings.hf_model,
+                    output_dir=args.output_dir,
+                    approved=True,
+                )
+                print("\nExport approved. Files created:")
+                for label, path in paths.items():
+                    print(f"- {label}: {path}")
+            else:
+                print("Export not approved; no files were created.")
+        else:
+            print(
+                "No export has been performed. Re-run with "
+                "--prompt-for-approval to review and explicitly approve export."
+            )
     elif result["status"] == "failed":
         print(f"\nFailure reason: {result.get('failure_reason', 'Unknown')}")
 
