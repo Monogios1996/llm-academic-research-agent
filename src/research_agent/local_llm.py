@@ -1,12 +1,14 @@
-"""Local OpenAI-compatible LLM gateway.
+"""Local Ollama LLM gateway.
 
-The default configuration targets Ollama's OpenAI-compatible chat endpoint on
-localhost. Keeping the adapter OpenAI-compatible also allows other local model
-servers to be used without changing Planner or Summariser code.
+The local fallback uses Ollama's native chat endpoint rather than the
+OpenAI-compatible route. This gives the application explicit control over
+thinking behaviour and avoids exhausting a small output budget on hidden
+reasoning before a usable final answer is produced.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import httpx
@@ -15,7 +17,7 @@ from research_agent.llm import LLMGateway, LLMProviderError
 
 
 class LocalLLMGateway(LLMGateway):
-    """Generate text through a locally running OpenAI-compatible model server."""
+    """Generate text through a locally running Ollama model."""
 
     def __init__(
         self,
@@ -42,16 +44,23 @@ class LocalLLMGateway(LLMGateway):
         self.client = client or httpx.Client(timeout=timeout)
 
     def generate(self, prompt: str) -> str:
-        """Return generated text from the configured local model."""
+        """Return final-answer text from the configured local model."""
         if not prompt.strip():
             raise ValueError("prompt cannot be empty")
 
+        # Qwen3 supports a soft non-thinking switch. We also send Ollama's
+        # explicit think=False flag so the intent is clear at both layers.
+        local_prompt = f"{prompt.rstrip()}\n\n/no_think"
+
         payload = {
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
+            "messages": [{"role": "user", "content": local_prompt}],
             "stream": False,
+            "think": False,
+            "options": {
+                "num_predict": self.max_tokens,
+                "temperature": self.temperature,
+            },
         }
 
         try:
@@ -66,22 +75,45 @@ class LocalLLMGateway(LLMGateway):
             ) from exc
         except (httpx.HTTPError, ValueError) as exc:
             raise LLMProviderError(
-                "Local LLM request failed; check that the local model server is running"
+                "Local LLM request failed; check that Ollama is running"
             ) from exc
 
         try:
-            content = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as exc:
+            content = data["message"]["content"]
+        except (KeyError, TypeError) as exc:
             raise LLMProviderError(
                 "Local LLM returned an unexpected response structure"
             ) from exc
 
-        if not isinstance(content, str) or not content.strip():
-            raise LLMProviderError("Local LLM returned empty model output")
+        if not isinstance(content, str):
+            raise LLMProviderError("Local LLM returned invalid model output")
 
-        return content.strip()
+        cleaned = _final_answer(content)
+        if not cleaned:
+            raise LLMProviderError("Local LLM returned empty final model output")
+
+        return cleaned
 
     def close(self) -> None:
         """Close the internally-created HTTP client."""
         if self._owns_client:
             self.client.close()
+
+
+def _final_answer(content: str) -> str:
+    """Remove any leaked thinking prefix and return only the final answer.
+
+    Recent Ollama versions support think=False for Qwen3, but a live Windows
+    integration run showed that this model/version combination could still
+    include a thinking block in message.content. Stripping a leading block
+    makes the adapter robust without exposing model reasoning to downstream
+    agent roles.
+    """
+    text = content.strip()
+    if not text:
+        return ""
+
+    if "</think>" in text.lower():
+        text = re.sub(r"(?is)^.*?</think>\s*", "", text, count=1)
+
+    return text.strip()
