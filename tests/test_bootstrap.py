@@ -35,7 +35,7 @@ def test_live_workflow_wires_local_fallback_when_enabled() -> None:
         crossref_email="student@example.org",
         local_llm_enabled=True,
         local_llm_model="qwen3:4b",
-        local_llm_base_url="http://127.0.0.1:11434/v1/chat/completions",
+        local_llm_base_url="http://127.0.0.1:11434/api/chat",
     )
 
     workflow = build_live_workflow(settings)
