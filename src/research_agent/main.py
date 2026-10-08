@@ -11,6 +11,7 @@ import argparse
 
 from research_agent.bootstrap import build_live_workflow
 from research_agent.exporter import export_research_package
+from research_agent.llm import FailoverGateway
 from research_agent.models import ResearchGoal
 from research_agent.settings import ConfigurationError, LiveSettings
 
@@ -60,7 +61,13 @@ def main() -> None:
 
     print("\n=== Research Agent Result ===")
     print(f"Status: {result['status']}")
-    print(f"Model: {settings.hf_model}")
+    print(f"Hosted model: {settings.hf_model}")
+    gateway = workflow.planner.gateway
+    if isinstance(gateway, FailoverGateway):
+        print(f"Local fallback enabled: yes ({settings.local_llm_model})")
+        print(f"Local fallback calls: {gateway.fallback_count}")
+    else:
+        print("Local fallback enabled: no")
 
     plan = result.get("plan")
     if plan is not None:
@@ -95,7 +102,12 @@ def main() -> None:
             if decision in {"y", "yes"}:
                 paths = export_research_package(
                     result,
-                    model=settings.hf_model,
+                    model=(
+                        settings.local_llm_model
+                        if isinstance(gateway, FailoverGateway)
+                        and gateway.fallback_count > 0
+                        else settings.hf_model
+                    ),
                     output_dir=args.output_dir,
                     approved=True,
                 )
