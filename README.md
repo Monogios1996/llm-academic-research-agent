@@ -46,7 +46,7 @@ The workflow deliberately stops at **human approval** after all subtasks validat
 - LangGraph for explicit stateful orchestration
 - Pydantic for validated domain and inter-agent data models
 - Hugging Face Inference Providers for primary live LLM planning and summarisation
-- optional local OpenAI-compatible LLM fallback for provider/quota failures
+- optional local Ollama LLM fallback for provider/quota failures
 - Crossref and OpenAlex for structured scholarly metadata
 - deterministic deduplication and lexical relevance ranking before LLM summarisation
 - pytest for automated unit and workflow tests
@@ -88,7 +88,7 @@ Set these environment variables before live execution:
 - `CROSSREF_EMAIL` – recommended identification address for Crossref polite API access.
 - `LOCAL_LLM_ENABLED` – optional boolean; set to `true` to enable hosted-to-local failover.
 - `LOCAL_LLM_MODEL` – local model name; development default `qwen3:4b`.
-- `LOCAL_LLM_BASE_URL` – OpenAI-compatible local chat endpoint; default `http://127.0.0.1:11434/v1/chat/completions`.
+- `LOCAL_LLM_BASE_URL` – Ollama native local chat endpoint; default `http://127.0.0.1:11434/api/chat`.
 
 An example containing placeholder values is provided in `.env.example`. Real credentials must never be committed to the repository.
 
@@ -106,7 +106,7 @@ A manual GitHub Actions workflow named **live-provider-smoke** provides the same
 
 ## Local fallback verification
 
-The local fallback is disabled by default. With a local OpenAI-compatible model server running, verify connectivity with:
+The local fallback is disabled by default. With Ollama running locally, verify connectivity with:
 
 ```bash
 PYTHONPATH=src python -m research_agent.local_smoke
@@ -159,7 +159,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, and the local-fallback stage to **51 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, the first local-fallback stage to **51 tests**, and the Ollama live-integration remediation to **53 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
