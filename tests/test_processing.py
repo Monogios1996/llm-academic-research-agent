@@ -2,8 +2,9 @@
 
 import pytest
 
-from research_agent.models import AcademicRecord, ResearchSubtask
+from research_agent.models import AcademicRecord, RankedEvidence, ResearchSubtask
 from research_agent.processing import (
+    deduplicate_evidence,
     deduplicate_records,
     process_records,
     relevance_score,
@@ -104,3 +105,36 @@ def test_process_records_returns_ranked_top_k() -> None:
 def test_process_records_rejects_invalid_top_k() -> None:
     with pytest.raises(ValueError, match="top_k must be at least 1"):
         process_records([], _subtask(), top_k=0)
+
+
+def test_global_evidence_deduplication_prefers_stronger_instance() -> None:
+    record_a = AcademicRecord(
+        title="Agent Planning Benchmark",
+        source="OpenAlex",
+        doi="10.48550/arxiv.2606.04874",
+        abstract="Benchmark for evaluating planning agents.",
+    )
+    record_b = AcademicRecord(
+        title="Agent Planning Benchmark",
+        source="Crossref",
+        doi="https://doi.org/10.48550/arxiv.2606.04874",
+        abstract="Benchmark for evaluating planning agents.",
+    )
+    weaker = RankedEvidence(
+        record=record_a,
+        relevance_score=0.25,
+        summary="Relevant to benchmark datasets.",
+        traceable=True,
+    )
+    stronger = RankedEvidence(
+        record=record_b,
+        relevance_score=0.33,
+        summary="More directly relevant to planning-agent evaluation.",
+        traceable=True,
+    )
+
+    unique = deduplicate_evidence([weaker, stronger])
+
+    assert len(unique) == 1
+    assert unique[0].relevance_score == 0.33
+    assert unique[0].summary.startswith("More directly relevant")
