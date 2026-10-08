@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway, explicit human approval, and guarded Markdown/JSON/CSV export. Persistence, local-model fallback, broader evaluation, and the final demonstration interface remain to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway, explicit human approval, and guarded Markdown/JSON/CSV export. Persistence, broader evaluation, live verification of the local fallback, and the final demonstration interface remain to be completed.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -45,7 +45,8 @@ The workflow deliberately stops at **human approval** after all subtasks validat
 - Python 3.11+
 - LangGraph for explicit stateful orchestration
 - Pydantic for validated domain and inter-agent data models
-- Hugging Face Inference Providers for live LLM planning and summarisation
+- Hugging Face Inference Providers for primary live LLM planning and summarisation
+- optional local OpenAI-compatible LLM fallback for provider/quota failures
 - Crossref and OpenAlex for structured scholarly metadata
 - deterministic deduplication and lexical relevance ranking before LLM summarisation
 - pytest for automated unit and workflow tests
@@ -85,6 +86,9 @@ Set these environment variables before live execution:
 - `HF_MODEL` – optional model override. The development default is `openai/gpt-oss-20b:fastest`.
 - `OPENALEX_API_KEY` – OpenAlex API key.
 - `CROSSREF_EMAIL` – recommended identification address for Crossref polite API access.
+- `LOCAL_LLM_ENABLED` – optional boolean; set to `true` to enable hosted-to-local failover.
+- `LOCAL_LLM_MODEL` – local model name; development default `qwen3:4b`.
+- `LOCAL_LLM_BASE_URL` – OpenAI-compatible local chat endpoint; default `http://127.0.0.1:11434/v1/chat/completions`.
 
 An example containing placeholder values is provided in `.env.example`. Real credentials must never be committed to the repository.
 
@@ -99,6 +103,16 @@ PYTHONPATH=src python -m research_agent.live_smoke
 The smoke test performs one small Hugging Face generation and one-record searches against Crossref and OpenAlex. This deliberately limits model/API usage while establishing that credentials, connectivity, and response parsing are working.
 
 A manual GitHub Actions workflow named **live-provider-smoke** provides the same check in a clean hosted environment after the repository secrets have been configured.
+
+## Local fallback verification
+
+The local fallback is disabled by default. With a local OpenAI-compatible model server running, verify connectivity with:
+
+```bash
+PYTHONPATH=src python -m research_agent.local_smoke
+```
+
+Then set `LOCAL_LLM_ENABLED=true` before running the normal research agent. Hosted Hugging Face inference remains the primary route; the local model is invoked only when the hosted gateway reports a provider failure. The CLI reports how many model calls used the fallback so provider provenance remains visible.
 
 ## Running the live research agent
 
@@ -145,7 +159,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, and the approval/export stage to **43 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, and the local-fallback stage adds dedicated failover and local-gateway coverage. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
