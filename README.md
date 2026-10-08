@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, and a live Hugging Face provider gateway. Persistence, approval/export, and the final demonstration interface remain to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway, explicit human approval, and guarded Markdown/JSON/CSV export. Persistence, local-model fallback, broader evaluation, and the final demonstration interface remain to be completed.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -17,7 +17,7 @@ The system accepts a high-level academic research goal and coordinates six logic
 3. **Academic Retrieval** – retrieves scholarly metadata from Crossref and OpenAlex.
 4. **Processing / Ranking** – normalises, deduplicates, and ranks retrieved evidence.
 5. **Evidence Validator** – checks sufficiency, relevance, and source traceability.
-6. **Storage / Export** – planned final stage for approved Markdown and machine-readable outputs.
+6. **Storage / Export** – creates approved Markdown, JSON, and CSV research packages only after the human-approval guard passes.
 
 Current control flow:
 
@@ -38,7 +38,7 @@ Evidence Validation
   └─ retries exhausted ─→ bounded re-planning → clean failure if unresolved
 ```
 
-The workflow deliberately stops at **human approval** after all subtasks validate. Export is not performed automatically because the original design specifies approval before a consequential final action.
+The workflow deliberately stops at **human approval** after all subtasks validate. Export is never automatic: the validated package must be explicitly approved before the guarded export layer can create Markdown, JSON, and CSV outputs.
 
 ## Technical approach
 
@@ -116,7 +116,17 @@ PYTHONPATH=src python -m research_agent.main \
   --objective "Identify current architectures, evaluation approaches, and limitations."
 ```
 
-The CLI displays the generated plan, validated evidence, concise grounded summaries, and the workflow audit trail. A successful run ends at `awaiting_approval`; no export is performed at this stage.
+The CLI displays the generated plan, validated evidence, concise grounded summaries, and the workflow audit trail. A normal successful run ends at `awaiting_approval` without creating files.
+
+To exercise the explicit human-in-the-loop export path locally:
+
+```bash
+PYTHONPATH=src python -m research_agent.main \
+  --topic "LLM planning agents in academic research" \
+  --prompt-for-approval
+```
+
+The complete validated result is displayed first. The CLI then asks whether export should proceed. An affirmative decision writes Markdown, JSON, and CSV files to `outputs/` by default; a negative or blank response creates nothing. Use `--output-dir` to choose another destination.
 
 ## Testing status
 
@@ -131,9 +141,11 @@ The automated suite covers:
 - LLM summarisation boundaries;
 - evidence validation and targeted remediation;
 - LangGraph success, retry, re-planning, and failure routes;
-- live dependency wiring without making network calls.
+- live dependency wiring without making network calls;
+- global cross-subtask evidence deduplication;
+- human-approval enforcement and three-format export.
 
-The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. After adding the live-provider gateway, runtime configuration, CLI wiring, and smoke-test infrastructure, the full automated suite was re-run successfully with **38 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, and the approval/export stage to **43 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
