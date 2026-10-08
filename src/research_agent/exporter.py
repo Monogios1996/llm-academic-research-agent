@@ -156,7 +156,7 @@ def _render_markdown(payload: Mapping[str, Any]) -> str:
             lines.append(f"- Year: {record['year']}")
         if record.get("doi"):
             doi = record["doi"]
-            doi_value = re.sub(r"^https?://(?:dx\\.)?doi\\.org/", "", doi, flags=re.I)
+            doi_value = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", doi, flags=re.I)
             lines.append(f"- DOI: https://doi.org/{doi_value}")
         elif record.get("url"):
             lines.append(f"- URL: {record['url']}")
