@@ -186,3 +186,56 @@ def test_workflow_fails_cleanly_when_all_budgets_are_exhausted() -> None:
     assert result["status"] == "failed"
     assert "at least 2 required" in result["failure_reason"]
     assert any("bounded retries" in item for item in result["audit_log"])
+
+
+def test_final_aggregation_deduplicates_work_reused_across_subtasks() -> None:
+    goal = _goal()
+    plan = ResearchPlan(
+        goal=goal,
+        subtasks=[
+            ResearchSubtask(
+                id="q1",
+                question="How are LLM planning agents evaluated?",
+                search_terms=["LLM", "planning", "agents", "evaluation"],
+            ),
+            ResearchSubtask(
+                id="q2",
+                question="Which benchmarks evaluate LLM planning agents?",
+                search_terms=["LLM", "planning", "agents", "benchmarks"],
+            ),
+        ],
+        rationale="Two related questions can legitimately retrieve the same paper.",
+    )
+    planner = FakePlanner([plan])
+    retriever = SequenceRetriever(
+        [
+            [
+                _record("Shared Planning Benchmark", "10.1/shared"),
+                _record("Evaluation Methods", "10.1/methods"),
+            ],
+            [
+                _record("Shared Planning Benchmark", "10.1/shared"),
+                _record("Benchmark Dataset Study", "10.1/dataset"),
+            ],
+        ]
+    )
+    workflow = ResearchWorkflow(
+        planner=planner,
+        retrievers=[retriever],
+        summariser=FakeSummariser(),
+        validator=EvidenceValidator(min_items=2, min_traceable_ratio=1.0),
+        max_retries=0,
+        max_replans=0,
+    )
+
+    result = workflow.run(goal)
+
+    assert result["status"] == "awaiting_approval"
+    assert len(result["all_evidence"]) == 3
+    assert sum(
+        item.record.doi == "10.1/shared" for item in result["all_evidence"]
+    ) == 1
+    assert any(
+        "Removed 1 duplicate evidence item" in event
+        for event in result["audit_log"]
+    )
