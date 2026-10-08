@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
-from research_agent.models import AcademicRecord, ResearchSubtask, ScoredRecord
+from research_agent.models import AcademicRecord, RankedEvidence, ResearchSubtask, ScoredRecord
 
 
 _STOPWORDS = {
@@ -65,6 +65,27 @@ def deduplicate_records(records: Iterable[AcademicRecord]) -> list[AcademicRecor
     return list(best_by_key.values())
 
 
+def deduplicate_evidence(items: Iterable[RankedEvidence]) -> list[RankedEvidence]:
+    """Collapse duplicate works across the final multi-subtask evidence package.
+
+    Validation is deliberately performed per subtask before this step so that
+    each research question must still gather enough support independently.
+    During final aggregation, DOI is used as the primary identity key and a
+    normalised title is the fallback. When the same work supported more than
+    one subtask, the stronger evidence instance is retained using relevance,
+    metadata completeness, and summary length as deterministic tie-breakers.
+    """
+    best_by_key: dict[str, RankedEvidence] = {}
+
+    for item in items:
+        key = _record_key(item.record)
+        existing = best_by_key.get(key)
+        if existing is None or _evidence_quality(item) > _evidence_quality(existing):
+            best_by_key[key] = item
+
+    return list(best_by_key.values())
+
+
 def relevance_score(record: AcademicRecord, subtask: ResearchSubtask) -> float:
     """Return a transparent lexical relevance score between zero and one.
 
@@ -104,6 +125,15 @@ def _record_key(record: AcademicRecord) -> str:
 
     normalised_title = " ".join(re.findall(r"[a-z0-9]+", record.title.lower()))
     return f"title:{normalised_title}"
+
+
+def _evidence_quality(item: RankedEvidence) -> tuple[float, int, int]:
+    """Return a deterministic quality tuple for duplicate evidence selection."""
+    return (
+        item.relevance_score,
+        _metadata_completeness(item.record),
+        len(item.summary.strip()),
+    )
 
 
 def _metadata_completeness(record: AcademicRecord) -> int:
