@@ -12,11 +12,7 @@ from typing import Any
 
 import httpx
 
-from research_agent.llm import LLMGateway
-
-
-class LLMProviderError(RuntimeError):
-    """Raised when the configured live LLM provider cannot return usable text."""
+from research_agent.llm import LLMGateway, LLMProviderError
 
 
 class HuggingFaceGateway(LLMGateway):
