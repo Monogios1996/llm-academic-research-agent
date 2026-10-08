@@ -26,19 +26,22 @@ class FailingGateway:
         raise LLMProviderError("hosted provider unavailable")
 
 
-def test_local_gateway_uses_openai_compatible_chat_shape() -> None:
+def test_local_gateway_uses_native_ollama_chat_shape() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        assert str(request.url) == "http://127.0.0.1:11434/v1/chat/completions"
+        assert str(request.url) == "http://127.0.0.1:11434/api/chat"
         body = __import__("json").loads(request.content)
         assert body["model"] == "qwen3:4b"
-        assert body["messages"][0]["content"] == "Create a plan."
+        assert body["messages"][0]["content"].endswith("/no_think")
+        assert body["think"] is False
+        assert body["stream"] is False
+        assert body["options"]["num_predict"] == 700
         return httpx.Response(
             200,
-            json={"choices": [{"message": {"content": "local response"}}]},
+            json={"message": {"role": "assistant", "content": "local response"}},
         )
 
     gateway = LocalLLMGateway(
-        base_url="http://127.0.0.1:11434/v1/chat/completions",
+        base_url="http://127.0.0.1:11434/api/chat",
         model="qwen3:4b",
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -46,17 +49,63 @@ def test_local_gateway_uses_openai_compatible_chat_shape() -> None:
     assert gateway.generate("Create a plan.") == "local response"
 
 
+def test_local_gateway_strips_leaked_thinking_prefix() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        "<think>internal reasoning that must not be exposed</think>\n"
+                        "{\"subtasks\": []}"
+                    ),
+                }
+            },
+        )
+
+    gateway = LocalLLMGateway(
+        base_url="http://127.0.0.1:11434/api/chat",
+        model="qwen3:4b",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert gateway.generate("Create a plan.") == '{"subtasks": []}'
+
+
 def test_local_gateway_surfaces_connection_failure() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused", request=request)
 
     gateway = LocalLLMGateway(
-        base_url="http://127.0.0.1:11434/v1/chat/completions",
+        base_url="http://127.0.0.1:11434/api/chat",
         model="qwen3:4b",
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
-    with pytest.raises(LLMProviderError, match="local model server is running"):
+    with pytest.raises(LLMProviderError, match="check that Ollama is running"):
+        gateway.generate("test")
+
+
+def test_local_gateway_rejects_empty_final_output_after_thinking() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": "<think>reasoning only</think>",
+                }
+            },
+        )
+
+    gateway = LocalLLMGateway(
+        base_url="http://127.0.0.1:11434/api/chat",
+        model="qwen3:4b",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(LLMProviderError, match="empty final model output"):
         gateway.generate("test")
 
 
