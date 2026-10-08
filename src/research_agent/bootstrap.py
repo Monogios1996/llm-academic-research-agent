@@ -8,6 +8,8 @@ tests free to inject deterministic substitutes.
 from __future__ import annotations
 
 from research_agent.huggingface import HuggingFaceGateway
+from research_agent.llm import FailoverGateway, LLMGateway
+from research_agent.local_llm import LocalLLMGateway
 from research_agent.orchestration import ResearchWorkflow
 from research_agent.planner import Planner
 from research_agent.retrieval import CrossrefRetriever, OpenAlexRetriever
@@ -16,12 +18,26 @@ from research_agent.summarisation import EvidenceSummariser
 from research_agent.validation import EvidenceValidator
 
 
-def build_live_workflow(settings: LiveSettings) -> ResearchWorkflow:
-    """Build the bounded live workflow from runtime configuration."""
-    gateway = HuggingFaceGateway(
+def build_llm_gateway(settings: LiveSettings) -> LLMGateway:
+    """Build hosted inference with an optional local fallback."""
+    hosted = HuggingFaceGateway(
         token=settings.hf_token,
         model=settings.hf_model,
     )
+
+    if not settings.local_llm_enabled:
+        return hosted
+
+    local = LocalLLMGateway(
+        base_url=settings.local_llm_base_url,
+        model=settings.local_llm_model,
+    )
+    return FailoverGateway(primary=hosted, fallback=local)
+
+
+def build_live_workflow(settings: LiveSettings) -> ResearchWorkflow:
+    """Build the bounded live workflow from runtime configuration."""
+    gateway = build_llm_gateway(settings)
 
     planner = Planner(gateway=gateway, max_subtasks=3)
     summariser = EvidenceSummariser(gateway=gateway, max_summary_chars=600)
