@@ -92,13 +92,19 @@ Decompose the goal into between 2 and {self.max_subtasks} focused, searchable
 academic sub-questions. Each subtask must be useful for structured scholarly
 metadata retrieval from sources such as Crossref or OpenAlex.
 
-Return JSON only, using exactly this shape:
+Return JSON only, using exactly this shape. The subtasks array MUST contain at
+least 2 items:
 {{
   "subtasks": [
     {{
       "id": "q1",
       "question": "A focused research question",
       "search_terms": ["term one", "term two"]
+    }},
+    {{
+      "id": "q2",
+      "question": "A second complementary research question",
+      "search_terms": ["term three", "term four"]
     }}
   ],
   "rationale": "Brief explanation of why this decomposition covers the goal."
