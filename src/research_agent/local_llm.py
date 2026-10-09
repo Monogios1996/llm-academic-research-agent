@@ -63,12 +63,12 @@ class LocalLLMGateway(LLMGateway):
             },
         }
 
-        # The Planner explicitly requests JSON-only output. Ollama's native
-        # structured-output mode is used for those prompts so local fallback
-        # does not spend its response budget on prose before the JSON object.
-        # Plain-text roles such as the evidence summariser are left unchanged.
+        # The Planner explicitly requests JSON-only output. Ollama accepts a
+        # JSON Schema in the native "format" field, which constrains the local
+        # model to the planner contract instead of merely asking for generic
+        # JSON. Plain-text roles such as the evidence summariser are unchanged.
         if "Return JSON only" in prompt:
-            payload["format"] = "json"
+            payload["format"] = _planner_output_schema(prompt)
 
         try:
             response = self.client.post(self.base_url, json=payload)
@@ -124,3 +124,46 @@ def _final_answer(content: str) -> str:
         text = re.sub(r"(?is)^.*?</think>\s*", "", text, count=1)
 
     return text.strip()
+
+
+
+def _planner_output_schema(prompt: str) -> dict[str, Any]:
+    """Return the JSON Schema used to constrain local Planner output.
+
+    The minimum of two subtasks mirrors the Planner contract. When the prompt
+    contains the configured maximum ("between 2 and N"), the same upper bound
+    is applied at generation time; the Planner still performs its own Pydantic
+    and explicit count validation afterwards.
+    """
+    maximum = 5
+    match = re.search(r"between\s+2\s+and\s+(\d+)\s+focused", prompt, re.IGNORECASE)
+    if match:
+        maximum = max(2, int(match.group(1)))
+
+    return {
+        "type": "object",
+        "properties": {
+            "subtasks": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": maximum,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "minLength": 1},
+                        "question": {"type": "string", "minLength": 5},
+                        "search_terms": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {"type": "string", "minLength": 1},
+                        },
+                    },
+                    "required": ["id", "question", "search_terms"],
+                    "additionalProperties": False,
+                },
+            },
+            "rationale": {"type": "string"},
+        },
+        "required": ["subtasks", "rationale"],
+        "additionalProperties": False,
+    }
