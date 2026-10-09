@@ -42,11 +42,7 @@ class Planner:
         inspectable instead of silently changing planner behaviour.
         """
         raw_output = self.gateway.generate(self._build_prompt(goal, feedback))
-
-        try:
-            payload: dict[str, Any] = json.loads(raw_output)
-        except json.JSONDecodeError as exc:
-            raise PlanningError("Planner returned invalid JSON") from exc
+        payload = _load_json_object(raw_output)
 
         payload["goal"] = goal.model_dump()
 
@@ -104,3 +100,38 @@ Return JSON only, using exactly this shape:
 
 Do not include Markdown fences or any text outside the JSON object.
 """.strip()
+
+
+def _load_json_object(raw_output: str) -> dict[str, Any]:
+    """Parse one planner JSON object without weakening plan validation.
+
+    Hosted models normally obey the JSON-only instruction, so the complete
+    response is parsed first. Some local instruction-tuned models prepend a
+    short explanation or Markdown fence even when told not to. In that case,
+    the parser makes one bounded recovery attempt from the first opening brace
+    and uses JSONDecoder.raw_decode so trailing prose/fences are ignored.
+
+    This is intentionally not a general "repair" routine: malformed JSON is
+    still rejected, and the recovered value must still be an object before
+    Pydantic validates the full ResearchPlan schema.
+    """
+    text = raw_output.strip()
+    if not text:
+        raise PlanningError("Planner returned invalid JSON")
+
+    try:
+        decoded = json.loads(text)
+    except json.JSONDecodeError:
+        first_object = text.find("{")
+        if first_object < 0:
+            raise PlanningError("Planner returned invalid JSON")
+
+        try:
+            decoded, _ = json.JSONDecoder().raw_decode(text[first_object:])
+        except json.JSONDecodeError as exc:
+            raise PlanningError("Planner returned invalid JSON") from exc
+
+    if not isinstance(decoded, dict):
+        raise PlanningError("Planner returned invalid JSON object")
+
+    return decoded
