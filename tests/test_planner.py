@@ -48,6 +48,7 @@ def test_planner_creates_validated_plan() -> None:
     assert plan.goal.topic == "LLM planning agents"
     assert gateway.last_prompt is not None
     assert "Return JSON only" in gateway.last_prompt
+    assert '"id": "q2"' in gateway.last_prompt
 
 
 
@@ -131,6 +132,32 @@ def test_planner_rejects_invalid_json() -> None:
     with pytest.raises(PlanningError, match="invalid JSON"):
         planner.create_plan(ResearchGoal(topic="academic planning agents"))
 
+
+
+def test_planner_rejects_single_subtask() -> None:
+    gateway = FakeGateway(
+        """
+        {
+          "subtasks": [
+            {
+              "id": "q1",
+              "question": "What metrics are used to evaluate planning agents?",
+              "search_terms": ["planning agents", "evaluation metrics"]
+            }
+          ],
+          "rationale": "Only one subtask was returned."
+        }
+        """
+    )
+    planner = Planner(gateway=gateway, max_subtasks=3)
+
+    with pytest.raises(PlanningError, match="minimum required is 2"):
+        planner.create_plan(ResearchGoal(topic="LLM planning agents"))
+
+
+def test_planner_requires_capacity_for_two_subtasks() -> None:
+    with pytest.raises(ValueError, match="max_subtasks must be at least 2"):
+        Planner(gateway=FakeGateway("{}"), max_subtasks=1)
 
 def test_planner_rejects_too_many_subtasks() -> None:
     gateway = FakeGateway(
