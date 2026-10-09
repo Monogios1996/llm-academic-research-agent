@@ -35,6 +35,7 @@ def test_local_gateway_uses_native_ollama_chat_shape() -> None:
         assert body["think"] is False
         assert body["stream"] is False
         assert body["options"]["num_predict"] == 700
+        assert "format" not in body
         return httpx.Response(
             200,
             json={"message": {"role": "assistant", "content": "local response"}},
@@ -48,6 +49,31 @@ def test_local_gateway_uses_native_ollama_chat_shape() -> None:
 
     assert gateway.generate("Create a plan.") == "local response"
 
+
+
+def test_local_gateway_uses_json_mode_for_planner_prompt() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content)
+        assert body["format"] == "json"
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": '{"subtasks": [], "rationale": "test"}',
+                }
+            },
+        )
+
+    gateway = LocalLLMGateway(
+        base_url="http://127.0.0.1:11434/api/chat",
+        model="qwen3:4b",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    output = gateway.generate("Return JSON only using the required planner shape.")
+
+    assert output.startswith('{"subtasks"')
 
 def test_local_gateway_strips_leaked_thinking_prefix() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
