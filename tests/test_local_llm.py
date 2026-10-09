@@ -51,16 +51,31 @@ def test_local_gateway_uses_native_ollama_chat_shape() -> None:
 
 
 
-def test_local_gateway_uses_json_mode_for_planner_prompt() -> None:
+def test_local_gateway_uses_json_schema_for_planner_prompt() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         body = __import__("json").loads(request.content)
-        assert body["format"] == "json"
+        schema = body["format"]
+        assert schema["type"] == "object"
+        assert schema["required"] == ["subtasks", "rationale"]
+        subtasks = schema["properties"]["subtasks"]
+        assert subtasks["minItems"] == 2
+        assert subtasks["maxItems"] == 3
+        item_schema = subtasks["items"]
+        assert item_schema["required"] == ["id", "question", "search_terms"]
+        assert item_schema["additionalProperties"] is False
         return httpx.Response(
             200,
             json={
                 "message": {
                     "role": "assistant",
-                    "content": '{"subtasks": [], "rationale": "test"}',
+                    "content": (
+                        '{"subtasks": ['
+                        '{"id":"q1","question":"Question one?",'
+                        '"search_terms":["one"]},'
+                        '{"id":"q2","question":"Question two?",'
+                        '"search_terms":["two"]}],'
+                        '"rationale":"test"}'
+                    ),
                 }
             },
         )
@@ -71,7 +86,10 @@ def test_local_gateway_uses_json_mode_for_planner_prompt() -> None:
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
-    output = gateway.generate("Return JSON only using the required planner shape.")
+    output = gateway.generate(
+        "Decompose the goal into between 2 and 3 focused questions. "
+        "Return JSON only using the required planner shape."
+    )
 
     assert output.startswith('{"subtasks"')
 
