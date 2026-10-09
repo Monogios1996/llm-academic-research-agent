@@ -50,6 +50,81 @@ def test_planner_creates_validated_plan() -> None:
     assert "Return JSON only" in gateway.last_prompt
 
 
+
+def test_planner_recovers_json_from_markdown_fence() -> None:
+    gateway = FakeGateway(
+        """Here is the requested plan:
+```json
+{
+  "subtasks": [
+    {
+      "id": "q1",
+      "question": "How are planning agents evaluated?",
+      "search_terms": ["planning agents", "evaluation"]
+    },
+    {
+      "id": "q2",
+      "question": "Which benchmarks are used?",
+      "search_terms": ["planning agents", "benchmarks"]
+    }
+  ],
+  "rationale": "Evaluation methods and benchmarks cover the objective."
+}
+```
+"""
+    )
+    planner = Planner(gateway=gateway)
+
+    plan = planner.create_plan(ResearchGoal(topic="LLM planning agents"))
+
+    assert len(plan.subtasks) == 2
+    assert plan.subtasks[1].id == "q2"
+
+
+def test_planner_recovers_json_with_trailing_prose() -> None:
+    gateway = FakeGateway(
+        """A concise plan follows.
+{
+  "subtasks": [
+    {
+      "id": "q1",
+      "question": "What reliability measures are reported?",
+      "search_terms": ["LLM agents", "reliability"]
+    },
+    {
+      "id": "q2",
+      "question": "How is reproducibility assessed?",
+      "search_terms": ["LLM agents", "reproducibility"]
+    }
+  ],
+  "rationale": "The subtasks cover reliability and reproducibility."
+}
+This plan can now be executed."""
+    )
+    planner = Planner(gateway=gateway)
+
+    plan = planner.create_plan(ResearchGoal(topic="LLM planning agents"))
+
+    assert plan.rationale.startswith("The subtasks cover")
+
+
+def test_planner_still_rejects_malformed_embedded_json() -> None:
+    planner = Planner(
+        gateway=FakeGateway(
+            'Here is the plan: {"subtasks": [}'
+        )
+    )
+
+    with pytest.raises(PlanningError, match="invalid JSON"):
+        planner.create_plan(ResearchGoal(topic="academic planning agents"))
+
+
+def test_planner_rejects_non_object_json() -> None:
+    planner = Planner(gateway=FakeGateway('["not", "a", "plan"]'))
+
+    with pytest.raises(PlanningError, match="invalid JSON object"):
+        planner.create_plan(ResearchGoal(topic="academic planning agents"))
+
 def test_planner_rejects_invalid_json() -> None:
     planner = Planner(gateway=FakeGateway("not-json"))
 
