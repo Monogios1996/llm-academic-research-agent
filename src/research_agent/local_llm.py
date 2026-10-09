@@ -63,6 +63,13 @@ class LocalLLMGateway(LLMGateway):
             },
         }
 
+        # The Planner explicitly requests JSON-only output. Ollama's native
+        # structured-output mode is used for those prompts so local fallback
+        # does not spend its response budget on prose before the JSON object.
+        # Plain-text roles such as the evidence summariser are left unchanged.
+        if "Return JSON only" in prompt:
+            payload["format"] = "json"
+
         try:
             response = self.client.post(self.base_url, json=payload)
             response.raise_for_status()
