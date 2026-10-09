@@ -25,8 +25,8 @@ class Planner:
     """Generate a validated research plan from a high-level goal."""
 
     def __init__(self, gateway: LLMGateway, max_subtasks: int = 5) -> None:
-        if max_subtasks < 1:
-            raise ValueError("max_subtasks must be at least 1")
+        if max_subtasks < 2:
+            raise ValueError("max_subtasks must be at least 2")
         self.gateway = gateway
         self.max_subtasks = max_subtasks
 
@@ -50,6 +50,12 @@ class Planner:
             plan = ResearchPlan.model_validate(payload)
         except ValidationError as exc:
             raise PlanningError("Planner returned an invalid research plan") from exc
+
+        if len(plan.subtasks) < 2:
+            raise PlanningError(
+                f"Planner returned {len(plan.subtasks)} subtask(s); "
+                "minimum required is 2"
+            )
 
         if len(plan.subtasks) > self.max_subtasks:
             raise PlanningError(
