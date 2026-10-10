@@ -227,13 +227,11 @@ class ResearchWorkflow:
                 if item.relevance_score >= self.validator.min_relevance_score
             ]
 
-        filtered_count = len(state["retrieved_records"]) - len(scored)
-        message = f"Ranked {len(scored)} record(s)."
-        if filtered_count > 0:
-            message += (
-                f" Filtered {filtered_count} record(s) below the relevance "
-                f"threshold of {self.validator.min_relevance_score:.2f}."
-            )
+        message = (
+            f"Selected {len(scored)} top-ranked record(s) after relevance "
+            f"filtering at threshold "
+            f"{self.validator.min_relevance_score:.2f}."
+        )
 
         return {
             "scored_records": scored,
