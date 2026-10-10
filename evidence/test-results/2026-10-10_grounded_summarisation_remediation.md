@@ -91,3 +91,38 @@ Latest GitHub Actions result:
 
 The live fallback verification should now be repeated. The grounding
 remediation remains unverified end-to-end until that run completes.
+
+
+## Successful live verification
+
+After the HttpUrl regression fix, the repeat controlled fallback workflow
+completed successfully and reached the human-approval boundary.
+
+Observed result:
+
+- workflow status: `awaiting_approval`;
+- local fallback enabled with `qwen3:4b`;
+- six fallback calls in total;
+- two Planner subtasks;
+- five final evidence items after cross-subtask deduplication;
+- three low-relevance records filtered from each subtask before summarisation;
+- both validation stages passed;
+- no export was performed.
+
+The lower fallback-call count is expected because the FlowBench record had no
+abstract and therefore used the deterministic no-abstract path without calling
+the local LLM.
+
+The live output confirmed the grounding safeguards:
+
+- FlowBench produced an explicit limitation statement rather than inferred
+  metrics or findings;
+- the survey summary no longer introduced unsupported benchmark acronyms such
+  as the previously observed LARC/RBLA examples;
+- one generated summary triggered the high-confidence grounding guard and was
+  replaced with a source-grounded abstract extract.
+
+A preceding local run timed out while waiting for Ollama during the Planner
+call. A direct `ollama run qwen3:4b` invocation succeeded, and the immediate
+repeat workflow then completed. This is retained as an observed local-runtime
+limitation rather than treated as a grounding-code defect.
