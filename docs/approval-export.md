@@ -59,3 +59,15 @@ Automated tests verify that:
 
 This separation makes the approval requirement enforceable in code rather than
 only described in documentation.
+
+
+## Streamlit behaviour
+
+The minimal Streamlit demonstration reuses the same guarded export function as
+the CLI. The **Approve & Export** control is shown only after the workflow
+reaches `awaiting_approval`, and the export function still performs its own
+status and approval checks.
+
+A live browser smoke test verified the complete path from research input through
+planning, retrieval, processing, summarisation, validation, review, explicit
+approval, and creation of Markdown, JSON, and CSV files.
