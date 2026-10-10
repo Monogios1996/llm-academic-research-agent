@@ -148,6 +148,33 @@ def test_summariser_falls_back_to_abstract_for_unsupported_number() -> None:
     assert "97%" not in evidence.summary
     assert "planning-agent reliability" in evidence.summary
 
+
+def test_grounding_guard_handles_pydantic_http_url_metadata() -> None:
+    gateway = FakeGateway(
+        "The study compares evaluation methods for planning agents."
+    )
+    scored = ScoredRecord(
+        record=AcademicRecord(
+            title="Evaluating LLM Planning Agents",
+            authors=["A. Researcher"],
+            year=2025,
+            doi="10.1234/example",
+            source="OpenAlex",
+            url="https://example.org/work",
+            abstract=(
+                "The study compares evaluation methods for planning agents."
+            ),
+        ),
+        relevance_score=0.82,
+    )
+    summariser = EvidenceSummariser(gateway=gateway)
+
+    evidence = summariser.summarise(scored, _subtask())
+
+    assert gateway.calls == 1
+    assert evidence.summary.startswith("The study compares")
+    assert evidence.traceable is True
+
 def test_summariser_rejects_empty_output() -> None:
     summariser = EvidenceSummariser(gateway=FakeGateway("   "))
 
