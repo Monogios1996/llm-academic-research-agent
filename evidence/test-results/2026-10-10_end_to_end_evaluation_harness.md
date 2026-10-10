@@ -107,3 +107,51 @@ runtime/evaluation/evaluation-20261010T155012Z.json
 
 The next step is to execute the full 12-case manifest and record the resulting
 success rate and any genuine failure cases.
+
+
+## Full 12-case live evaluation
+
+The complete fixed manifest was executed under the normal controlled
+hosted-to-local fallback configuration.
+
+Observed per-case results:
+
+- E01 — LLM planning-agent evaluation: PASS, 5 evidence items, 100% traceable;
+- E02 — multi-agent coordination: PASS, 6 evidence items, 100% traceable;
+- E03 — retrieval-augmented generation evaluation: PASS, 6 evidence items, 100% traceable;
+- E04 — hallucination detection methods: PASS, 6 evidence items, 100% traceable;
+- E05 — reinforcement learning for robot navigation: PASS, 6 evidence items, 100% traceable;
+- E06 — federated-learning privacy/model utility: PASS, 6 evidence items, 100% traceable;
+- E07 — graph neural networks in drug discovery: PASS, 5 evidence items, 100% traceable;
+- E08 — algorithmic fairness in automated hiring: PASS, 6 evidence items, 100% traceable;
+- E09 — reliability of tool-using LLM agents: PASS, 6 evidence items, 100% traceable;
+- E10 — memory in LLM-based intelligent agents: PASS, 6 evidence items, 100% traceable;
+- E11 — broad/ambiguous memory-and-agents request: PASS, 6 evidence items, 100% traceable;
+- E12 — broad trustworthiness request: PASS, 6 evidence items, 100% traceable.
+
+All 12 cases:
+
+- reached `awaiting_approval`;
+- produced two Planner subtasks;
+- passed evidence validation;
+- retained at least five final evidence items;
+- achieved 100% traceability.
+
+Final result:
+
+```
+Passed: 12/12
+Success rate: 100.0%
+Target: 90% — MET
+```
+
+Generated local report:
+
+```
+runtime/evaluation/evaluation-20261010T161446Z.json
+```
+
+This satisfies the prototype's stated structural reliability target. The result
+must not be interpreted as proof that every retrieved source or generated
+summary is semantically perfect; qualitative output review remains a separate
+evaluation concern.
