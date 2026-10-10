@@ -11,7 +11,7 @@ import re
 from collections.abc import Iterable
 
 from research_agent.llm import LLMGateway
-from research_agent.models import RankedEvidence, ResearchSubtask, ScoredRecord
+from research_agent.models import AcademicRecord, RankedEvidence, ResearchSubtask, ScoredRecord
 
 
 class SummarisationError(RuntimeError):
@@ -151,7 +151,7 @@ def _truncate_summary(summary: str, max_chars: int) -> str:
 
 def _missing_abstract_summary(
     *,
-    record,
+    record: AcademicRecord,
     subtask: ResearchSubtask,
     max_chars: int,
 ) -> str:
@@ -167,7 +167,10 @@ def _missing_abstract_summary(
     return _truncate_summary(text, max_chars)
 
 
-def _has_unsupported_high_risk_terms(summary: str, record) -> bool:
+def _has_unsupported_high_risk_terms(
+    summary: str,
+    record: AcademicRecord,
+) -> bool:
     """Detect unsupported acronyms or numeric claims in generated summaries.
 
     This intentionally checks only high-confidence terms. General semantic
