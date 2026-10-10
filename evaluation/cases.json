@@ -1,0 +1,78 @@
+{
+  "target_success_rate": 0.9,
+  "description": "Twelve varied academic research requests used for repeatable end-to-end evaluation of planning, retrieval, validation, traceability, and bounded completion.",
+  "cases": [
+    {
+      "id": "E01",
+      "category": "clear-domain",
+      "topic": "How are LLM planning agents evaluated in academic research?",
+      "objective": "Identify evaluation approaches, datasets, and reliability considerations for LLM-based planning agents."
+    },
+    {
+      "id": "E02",
+      "category": "clear-domain",
+      "topic": "How is multi-agent coordination evaluated in autonomous agent systems?",
+      "objective": "Identify coordination mechanisms, evaluation criteria, and representative academic evidence."
+    },
+    {
+      "id": "E03",
+      "category": "comparative",
+      "topic": "How are retrieval-augmented generation systems evaluated?",
+      "objective": "Compare evaluation approaches for retrieval quality, answer quality, factuality, and reliability."
+    },
+    {
+      "id": "E04",
+      "category": "comparative",
+      "topic": "What methods are used to detect hallucinations in large language models?",
+      "objective": "Identify major detection approaches, evaluation datasets, and reported limitations."
+    },
+    {
+      "id": "E05",
+      "category": "technical-broad",
+      "topic": "How is reinforcement learning used for robot navigation?",
+      "objective": "Identify common methods, evaluation environments, and reliability challenges in academic research."
+    },
+    {
+      "id": "E06",
+      "category": "technical-broad",
+      "topic": "How is federated learning evaluated for privacy and model utility?",
+      "objective": "Identify privacy measures, performance metrics, datasets, and trade-offs used in the literature."
+    },
+    {
+      "id": "E07",
+      "category": "application-domain",
+      "topic": "How are graph neural networks evaluated in drug discovery research?",
+      "objective": "Identify representative tasks, datasets, metrics, and limitations."
+    },
+    {
+      "id": "E08",
+      "category": "sociotechnical",
+      "topic": "How is algorithmic fairness evaluated in automated hiring systems?",
+      "objective": "Identify fairness measures, datasets or study designs, and reliability or bias concerns."
+    },
+    {
+      "id": "E09",
+      "category": "agent-specific",
+      "topic": "How is the reliability of tool-using LLM agents evaluated?",
+      "objective": "Identify benchmarks, failure modes, and evaluation methods for agents that call external tools."
+    },
+    {
+      "id": "E10",
+      "category": "agent-specific",
+      "topic": "How is memory evaluated in LLM-based intelligent agents?",
+      "objective": "Identify memory architectures, benchmark tasks, evaluation measures, and limitations."
+    },
+    {
+      "id": "E11",
+      "category": "ambiguous",
+      "topic": "How does memory improve intelligent agents?",
+      "objective": "Turn the broad question into searchable academic sub-questions and gather traceable evidence without assuming one agent architecture."
+    },
+    {
+      "id": "E12",
+      "category": "broad-sociotechnical",
+      "topic": "What makes an AI agent trustworthy?",
+      "objective": "Decompose trustworthiness into academically searchable dimensions and identify relevant evaluation evidence."
+    }
+  ]
+}
