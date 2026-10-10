@@ -186,6 +186,7 @@ class ResearchWorkflow:
             state["retrieved_records"],
             state["current_subtask"],
             top_k=self.top_k,
+            min_relevance_score=self.validator.min_relevance_score,
         )
 
         # When validation specifically requests re-processing, weak items are
@@ -204,9 +205,17 @@ class ResearchWorkflow:
                 if item.relevance_score >= self.validator.min_relevance_score
             ]
 
+        filtered_count = len(state["retrieved_records"]) - len(scored)
+        message = f"Ranked {len(scored)} record(s)."
+        if filtered_count > 0:
+            message += (
+                f" Filtered {filtered_count} record(s) below the relevance "
+                f"threshold of {self.validator.min_relevance_score:.2f}."
+            )
+
         return {
             "scored_records": scored,
-            "audit_log": self._log(state, f"Ranked {len(scored)} record(s)."),
+            "audit_log": self._log(state, message),
         }
 
     def _summarise(self, state: WorkflowState) -> dict:
