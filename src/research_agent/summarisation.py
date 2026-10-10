@@ -7,6 +7,7 @@ system does not treat unsupported model-generated claims as academic evidence.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 from research_agent.llm import LLMGateway
@@ -39,7 +40,7 @@ class EvidenceSummariser:
             raise SummarisationError("LLM returned an empty evidence summary")
 
         if len(summary) > self.max_summary_chars:
-            summary = summary[: self.max_summary_chars].rstrip()
+            summary = _truncate_summary(summary, self.max_summary_chars)
 
         record = scored_record.record
         return RankedEvidence(
@@ -86,5 +87,38 @@ Source: {record.source}
 Abstract: {abstract}
 
 Write a concise academic summary explaining how this record may contribute to
-the research sub-question. Return plain text only.
+the research sub-question. Keep the summary within {self.max_summary_chars}
+characters and use complete sentences. Return plain text only.
 """.strip()
+
+
+
+def _truncate_summary(summary: str, max_chars: int) -> str:
+    """Shorten an overlong summary without leaving a broken sentence fragment."""
+    text = summary.strip()
+    if len(text) <= max_chars:
+        return text
+
+    candidate = text[:max_chars]
+    sentence_ends = [
+        match.end()
+        for match in re.finditer(r"[.!?](?=\s|$)", candidate)
+    ]
+    minimum_useful_length = int(max_chars * 0.5)
+    viable_ends = [
+        end for end in sentence_ends
+        if end >= minimum_useful_length
+    ]
+    if viable_ends:
+        return candidate[:viable_ends[-1]].strip()
+
+    # If no complete sentence fits, cut at a nearby word boundary and make the
+    # truncation explicit instead of silently returning a broken word/sentence.
+    body_limit = max_chars - 1
+    body = text[:body_limit].rstrip()
+    word_boundary = body.rfind(" ")
+    if word_boundary >= int(max_chars * 0.6):
+        body = body[:word_boundary]
+
+    body = body.rstrip(" ,;:-")
+    return f"{body}…"
