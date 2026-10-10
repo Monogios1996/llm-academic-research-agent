@@ -15,7 +15,8 @@ Successful completion stops at human approval; export is a later stage.
 
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
+from uuid import uuid4
 
 from langgraph.graph import END, START, StateGraph
 
@@ -58,6 +59,7 @@ class WorkflowState(TypedDict, total=False):
     status: str
     failure_reason: str
     audit_log: list[str]
+    run_id: str
 
 
 class ResearchWorkflow:
@@ -74,6 +76,7 @@ class ResearchWorkflow:
         top_k: int = 5,
         max_retries: int = 1,
         max_replans: int = 1,
+        checkpointer: Any | None = None,
     ) -> None:
         if not retrievers:
             raise ValueError("At least one academic retriever is required")
@@ -92,21 +95,33 @@ class ResearchWorkflow:
         self.top_k = top_k
         self.max_retries = max_retries
         self.max_replans = max_replans
+        self.checkpointer = checkpointer
         self.graph = self._build_graph()
 
-    def run(self, goal: ResearchGoal) -> WorkflowState:
-        """Execute the workflow until approval is required or execution fails."""
-        return self.graph.invoke(
-            {
-                "goal": goal,
-                "subtask_index": 0,
-                "all_evidence": [],
-                "retry_count": 0,
-                "replan_count": 0,
-                "status": "running",
-                "audit_log": [],
-            }
-        )
+    def run(
+        self,
+        goal: ResearchGoal,
+        *,
+        thread_id: str | None = None,
+    ) -> WorkflowState:
+        """Execute the workflow with a traceable run/thread identifier."""
+        run_id = thread_id or uuid4().hex
+        initial_state: WorkflowState = {
+            "goal": goal,
+            "subtask_index": 0,
+            "all_evidence": [],
+            "retry_count": 0,
+            "replan_count": 0,
+            "status": "running",
+            "audit_log": [],
+            "run_id": run_id,
+        }
+
+        if self.checkpointer is None:
+            return self.graph.invoke(initial_state)
+
+        config = {"configurable": {"thread_id": run_id}}
+        return self.graph.invoke(initial_state, config=config)
 
     def _build_graph(self):
         builder = StateGraph(WorkflowState)
@@ -138,7 +153,7 @@ class ResearchWorkflow:
         builder.add_edge("await_approval", END)
         builder.add_edge("fail", END)
 
-        return builder.compile()
+        return builder.compile(checkpointer=self.checkpointer)
 
     def _plan(self, state: WorkflowState) -> dict:
         plan = self.planner.create_plan(state["goal"])
