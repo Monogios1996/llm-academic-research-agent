@@ -111,6 +111,36 @@ def test_workflow_reaches_human_approval_after_valid_evidence() -> None:
     assert any("human approval required" in item for item in result["audit_log"])
 
 
+def test_processing_audit_does_not_mislabel_top_k_exclusions() -> None:
+    planner = FakePlanner([_plan()])
+    retriever = SequenceRetriever(
+        [[
+            _record("LLM Planning Agents Evaluation A", "10.1/a"),
+            _record("LLM Planning Agents Evaluation B", "10.1/b"),
+            _record("LLM Planning Agents Evaluation C", "10.1/c"),
+        ]]
+    )
+    workflow = ResearchWorkflow(
+        planner=planner,
+        retrievers=[retriever],
+        summariser=FakeSummariser(),
+        validator=EvidenceValidator(
+            min_items=2,
+            min_traceable_ratio=1.0,
+            min_relevance_score=0.10,
+        ),
+        top_k=2,
+        max_retries=0,
+        max_replans=0,
+    )
+
+    result = workflow.run(_goal())
+
+    audit = " ".join(result["audit_log"])
+    assert "Selected 2 top-ranked record(s)" in audit
+    assert "below the relevance threshold" not in audit
+
+
 def test_failed_validation_triggers_targeted_retrieval_retry() -> None:
     planner = FakePlanner([_plan()])
     retriever = SequenceRetriever(
