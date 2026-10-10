@@ -5,6 +5,8 @@ is to verify state transitions, routing, retry limits, re-planning, and the
 human-approval boundary independently of network availability.
 """
 
+from langgraph.checkpoint.memory import InMemorySaver
+
 from research_agent.models import (
     AcademicRecord,
     RankedEvidence,
@@ -239,3 +241,33 @@ def test_final_aggregation_deduplicates_work_reused_across_subtasks() -> None:
         "Removed 1 duplicate evidence item" in event
         for event in result["audit_log"]
     )
+
+
+def test_workflow_persists_state_with_explicit_thread_id() -> None:
+    planner = FakePlanner([_plan()])
+    retriever = SequenceRetriever(
+        [[
+            _record("LLM Planning Agents Evaluation", "10.1/a"),
+            _record("Evaluation of LLM Planning Agents", "10.1/b"),
+        ]]
+    )
+    checkpointer = InMemorySaver()
+    workflow = ResearchWorkflow(
+        planner=planner,
+        retrievers=[retriever],
+        summariser=FakeSummariser(),
+        validator=EvidenceValidator(min_items=2, min_traceable_ratio=1.0),
+        max_retries=0,
+        max_replans=0,
+        checkpointer=checkpointer,
+    )
+
+    result = workflow.run(_goal(), thread_id="evaluation-run-001")
+    snapshot = workflow.graph.get_state(
+        {"configurable": {"thread_id": "evaluation-run-001"}}
+    )
+
+    assert result["run_id"] == "evaluation-run-001"
+    assert snapshot.values["run_id"] == "evaluation-run-001"
+    assert snapshot.values["status"] == "awaiting_approval"
+    assert snapshot.values["all_evidence"]
