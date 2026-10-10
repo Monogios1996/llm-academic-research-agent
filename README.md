@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, LLM-grounded summarisation, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway, explicit human approval, and guarded Markdown/JSON/CSV export. Persistence, broader evaluation, live verification of the local fallback, and the final demonstration interface remain to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. Broader evaluation and the final demonstration interface remain to be completed.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -50,6 +50,8 @@ The workflow deliberately stops at **human approval** after all subtasks validat
 - Crossref and OpenAlex for structured scholarly metadata
 - deterministic deduplication and lexical relevance ranking before LLM summarisation
 - pytest for automated unit and workflow tests
+- SQLite-backed LangGraph checkpoint persistence for traceable workflow state
+- structured JSON run telemetry with run IDs, duration, status, evidence counts, fallback-call counts, and audit events
 - GitHub Actions for reproducible automated and live-provider verification
 
 The LLM is accessed through a provider-independent gateway so that the Planner and Summariser do not depend directly on one provider client. Automated tests use deterministic test doubles so core application logic can be verified without consuming model credits or depending on network availability.
@@ -62,7 +64,8 @@ The LLM is accessed through a provider-independent gateway so that the Planner a
 ├── src/research_agent/    # application source code
 ├── tests/                 # unit and orchestration tests
 ├── docs/                  # design and implementation notes
-├── evidence/              # test results, example runs, logs, screenshots
+├── evidence/              # curated test results, example runs, logs, screenshots
+├── runtime/               # local checkpoints/run logs (generated, gitignored)
 ├── .env.example           # credential names only; never real secrets
 ├── requirements.txt
 └── README.md
@@ -130,7 +133,9 @@ PYTHONPATH=src python -m research_agent.main \
   --objective "Identify current architectures, evaluation approaches, and limitations."
 ```
 
-The CLI displays the generated plan, validated evidence, concise grounded summaries, and the workflow audit trail. A normal successful run ends at `awaiting_approval` without creating files.
+The CLI displays a unique run ID, generated plan, validated evidence, concise grounded summaries, and the workflow audit trail. By default it also persists LangGraph checkpoints to `runtime/research_agent_checkpoints.sqlite3` and writes a structured JSON execution record under `runtime/run-logs/`. These local runtime files are gitignored. A normal successful run ends at `awaiting_approval` without creating research-package exports.
+
+Checkpointing can be disabled for an individual run with `--no-checkpointing`, or redirected with `--checkpoint-db`. Structured run logs can be redirected with `--run-log-dir`.
 
 To exercise the explicit human-in-the-loop export path locally:
 
@@ -159,7 +164,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The LangGraph milestone was verified in GitHub Actions with **30 tests passing**. The live-provider milestone increased this to **38 tests**, global evidence deduplication to **40 tests**, the approval/export stage to **43 tests**, the first local-fallback stage to **51 tests**, and the Ollama live-integration remediation to **53 tests passing**. Live-provider verification remains intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **76 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, and structured run telemetry. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
