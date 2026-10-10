@@ -45,8 +45,8 @@ and the default model name is:
 qwen3:4b
 ```
 
-These defaults are compatible with a local OpenAI-style server configuration
-and can be overridden through environment variables.
+These defaults target Ollama's native local chat endpoint and can be overridden
+through environment variables.
 
 ## Configuration
 
@@ -77,6 +77,8 @@ PYTHONPATH=src python -m research_agent.local_smoke
 ```
 
 The first real local smoke test exposed an empty-output integration defect and
-has been remediated. A repeat local smoke test is required to verify the fix,
-followed by a full workflow run with the hosted provider deliberately made
-unavailable before claiming live fallback verification.
+was remediated through the native Ollama adapter. Subsequent controlled
+hosted-failure runs verified the complete fallback path with `qwen3:4b`,
+including structured Planner output, grounded summarisation, validation, and
+completion at the human-approval boundary. Later 12-case evaluation runs also
+used the fallback successfully across varied research topics.
