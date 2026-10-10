@@ -76,3 +76,34 @@ The current GitHub Actions suite reports:
 
 The 12-case live evaluation itself has not yet been executed, so no success-rate
 claim is made at this stage.
+
+
+## Three-case live smoke verification
+
+The first live smoke run executed the first three fixed evaluation cases with
+the normal hosted-to-local fallback configuration.
+
+Observed results:
+
+- E01 — LLM planning-agent evaluation: PASS;
+- E02 — multi-agent coordination evaluation: PASS;
+- E03 — retrieval-augmented generation evaluation: PASS;
+- all three cases reached `awaiting_approval`;
+- each case produced two Planner subtasks;
+- each case retained six final evidence items;
+- traceability was 100% in all three cases;
+- fallback calls were 5, 7, and 7 respectively;
+- smoke success rate: 3/3 (100%).
+
+The runner correctly labelled this as a partial smoke run and did not claim
+that the design target had been met. The 90% target remains reserved for the
+complete 12-case manifest.
+
+Generated local report:
+
+```
+runtime/evaluation/evaluation-20261010T155012Z.json
+```
+
+The next step is to execute the full 12-case manifest and record the resulting
+success rate and any genuine failure cases.
