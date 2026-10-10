@@ -8,6 +8,7 @@ reasoning before a usable final answer is produced.
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -51,6 +52,13 @@ class LocalLLMGateway(LLMGateway):
         # Qwen3 supports a soft non-thinking switch. We also send Ollama's
         # explicit think=False flag so the intent is clear at both layers.
         local_prompt = f"{prompt.rstrip()}\n\n/no_think"
+        is_summary_prompt = _is_summary_prompt(prompt)
+        if is_summary_prompt:
+            local_prompt += (
+                "\n\nFor this local fallback call, return only JSON matching "
+                "the supplied schema. Put the final evidence summary in the "
+                "'summary' field with no analysis or preamble."
+            )
 
         payload = {
             "model": self.model,
@@ -69,6 +77,8 @@ class LocalLLMGateway(LLMGateway):
         # JSON. Plain-text roles such as the evidence summariser are unchanged.
         if "Return JSON only" in prompt:
             payload["format"] = _planner_output_schema(prompt)
+        elif is_summary_prompt:
+            payload["format"] = _summary_output_schema()
 
         try:
             response = self.client.post(self.base_url, json=payload)
@@ -98,6 +108,9 @@ class LocalLLMGateway(LLMGateway):
         cleaned = _final_answer(content)
         if not cleaned:
             raise LLMProviderError("Local LLM returned empty final model output")
+
+        if is_summary_prompt:
+            return _extract_structured_summary(cleaned)
 
         return cleaned
 
@@ -167,3 +180,50 @@ def _planner_output_schema(prompt: str) -> dict[str, Any]:
         "required": ["subtasks", "rationale"],
         "additionalProperties": False,
     }
+
+
+
+def _is_summary_prompt(prompt: str) -> bool:
+    """Identify the evidence-summarisation role without affecting other calls."""
+    return (
+        "evidence-summarisation component of an academic research agent"
+        in prompt.lower()
+    )
+
+
+def _summary_output_schema() -> dict[str, Any]:
+    """Constrain local evidence summarisation to one final summary field."""
+    return {
+        "type": "object",
+        "properties": {
+            "summary": {
+                "type": "string",
+                "minLength": 1,
+            }
+        },
+        "required": ["summary"],
+        "additionalProperties": False,
+    }
+
+
+def _extract_structured_summary(content: str) -> str:
+    """Return only the schema-constrained final summary from local output."""
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise LLMProviderError(
+            "Local summariser returned invalid structured output"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise LLMProviderError(
+            "Local summariser returned invalid structured output"
+        )
+
+    summary = payload.get("summary")
+    if not isinstance(summary, str) or not summary.strip():
+        raise LLMProviderError(
+            "Local summariser returned an empty structured summary"
+        )
+
+    return summary.strip()
