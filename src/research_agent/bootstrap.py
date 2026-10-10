@@ -11,6 +11,7 @@ from research_agent.huggingface import HuggingFaceGateway
 from research_agent.llm import FailoverGateway, LLMGateway
 from research_agent.local_llm import LocalLLMGateway
 from research_agent.orchestration import ResearchWorkflow
+from research_agent.persistence import SQLiteCheckpointStore
 from research_agent.planner import Planner
 from research_agent.retrieval import CrossrefRetriever, OpenAlexRetriever
 from research_agent.settings import LiveSettings
@@ -35,7 +36,11 @@ def build_llm_gateway(settings: LiveSettings) -> LLMGateway:
     return FailoverGateway(primary=hosted, fallback=local)
 
 
-def build_live_workflow(settings: LiveSettings) -> ResearchWorkflow:
+def build_live_workflow(
+    settings: LiveSettings,
+    *,
+    checkpoint_db: str | None = None,
+) -> ResearchWorkflow:
     """Build the bounded live workflow from runtime configuration."""
     gateway = build_llm_gateway(settings)
 
@@ -53,6 +58,12 @@ def build_live_workflow(settings: LiveSettings) -> ResearchWorkflow:
         min_relevance_score=0.10,
     )
 
+    checkpoint_store = (
+        SQLiteCheckpointStore(checkpoint_db)
+        if checkpoint_db
+        else None
+    )
+
     return ResearchWorkflow(
         planner=planner,
         retrievers=retrievers,
@@ -62,4 +73,10 @@ def build_live_workflow(settings: LiveSettings) -> ResearchWorkflow:
         top_k=3,
         max_retries=1,
         max_replans=1,
+        checkpointer=(
+            checkpoint_store.saver
+            if checkpoint_store is not None
+            else None
+        ),
+        checkpoint_store=checkpoint_store,
     )
