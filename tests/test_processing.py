@@ -102,6 +102,75 @@ def test_process_records_returns_ranked_top_k() -> None:
     assert all(item.record.title != "Unrelated Marine Biology" for item in ranked)
 
 
+
+def test_relevance_score_penalises_generic_dataset_false_positive() -> None:
+    subtask = ResearchSubtask(
+        id="q2",
+        question=(
+            "Which standardized datasets and benchmarks are used to measure "
+            "the reliability of LLM planning agents?"
+        ),
+        search_terms=[
+            "LLM planning agents",
+            "standardized datasets",
+            "reliability",
+            "performance",
+        ],
+    )
+    relevant = AcademicRecord(
+        title="Benchmarking LLM Planning Agents",
+        source="OpenAlex",
+        abstract="Evaluation of planning agents on standardized tasks.",
+    )
+    false_positive = AcademicRecord(
+        title="Performance evaluation metrics for DIARETDB1 and KAGGLE datasets",
+        source="Crossref",
+        abstract="Dataset performance metrics for a medical imaging task.",
+    )
+
+    assert relevance_score(relevant, subtask) > relevance_score(
+        false_positive, subtask
+    )
+    assert relevance_score(false_positive, subtask) < 0.10
+
+
+def test_process_records_filters_below_minimum_relevance() -> None:
+    subtask = ResearchSubtask(
+        id="q2",
+        question="Which benchmarks evaluate LLM planning agents?",
+        search_terms=["LLM planning agents", "benchmarks"],
+    )
+    records = [
+        AcademicRecord(
+            title="Benchmarking LLM Planning Agents",
+            source="OpenAlex",
+            abstract="A benchmark for LLM planning agents.",
+        ),
+        AcademicRecord(
+            title="Performance metrics for KAGGLE datasets",
+            source="Crossref",
+            abstract="Metrics for an unrelated imaging dataset.",
+        ),
+    ]
+
+    ranked = process_records(
+        records,
+        subtask,
+        top_k=3,
+        min_relevance_score=0.10,
+    )
+
+    assert len(ranked) == 1
+    assert ranked[0].record.title == "Benchmarking LLM Planning Agents"
+
+
+def test_process_records_rejects_invalid_minimum_relevance() -> None:
+    with pytest.raises(
+        ValueError,
+        match="min_relevance_score must be between 0 and 1",
+    ):
+        process_records([], _subtask(), min_relevance_score=1.1)
+
 def test_process_records_rejects_invalid_top_k() -> None:
     with pytest.raises(ValueError, match="top_k must be at least 1"):
         process_records([], _subtask(), top_k=0)
