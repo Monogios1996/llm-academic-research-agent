@@ -183,6 +183,7 @@ def _has_unsupported_high_risk_terms(summary: str, record) -> bool:
             record.doi or "",
             record.url or "",
             record.source,
+            str(record.year) if record.year else "",
         ]
         if part
     ).lower()
