@@ -77,6 +77,7 @@ class ResearchWorkflow:
         max_retries: int = 1,
         max_replans: int = 1,
         checkpointer: Any | None = None,
+        checkpoint_store: Any | None = None,
     ) -> None:
         if not retrievers:
             raise ValueError("At least one academic retriever is required")
@@ -96,7 +97,13 @@ class ResearchWorkflow:
         self.max_retries = max_retries
         self.max_replans = max_replans
         self.checkpointer = checkpointer
+        self.checkpoint_store = checkpoint_store
         self.graph = self._build_graph()
+
+    def close(self) -> None:
+        """Release owned persistence resources, if configured."""
+        if self.checkpoint_store is not None:
+            self.checkpoint_store.close()
 
     def run(
         self,
