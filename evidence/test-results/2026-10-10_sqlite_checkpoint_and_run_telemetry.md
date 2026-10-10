@@ -106,3 +106,26 @@ Latest GitHub Actions result:
 The live persistence verification should now be repeated to confirm creation of
 the SQLite checkpoint database and structured JSON run log under the complete
 research workflow.
+
+
+## Successful live persistence verification
+
+The repeat live workflow completed successfully after the serialization
+remediation.
+
+Observed result:
+
+- automated suite: `76 passed`;
+- run ID: `44916240c1074498aaf8f9b8d8636c75`;
+- final status: `awaiting_approval`;
+- SQLite checkpoint database:
+  `runtime/research_agent_checkpoints.sqlite3`;
+- local fallback: enabled with `qwen3:4b`;
+- local fallback calls: 6;
+- final evidence items: 5;
+- structured run log:
+  `runtime/run-logs/44916240c1074498aaf8f9b8d8636c75.json`;
+- human approval boundary preserved and no research-package export performed.
+
+This verifies the persistence and structured telemetry milestone end-to-end
+under the normal controlled hosted-to-local fallback workflow.
