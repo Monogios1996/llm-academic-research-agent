@@ -33,16 +33,38 @@ class EvidenceSummariser:
         subtask: ResearchSubtask,
     ) -> RankedEvidence:
         """Create one grounded summary from a scored academic record."""
-        prompt = self._build_prompt(scored_record, subtask)
-        summary = self.gateway.generate(prompt).strip()
-
-        if not summary:
-            raise SummarisationError("LLM returned an empty evidence summary")
-
-        if len(summary) > self.max_summary_chars:
-            summary = _truncate_summary(summary, self.max_summary_chars)
-
         record = scored_record.record
+
+        # Do not ask an LLM to infer substantive evidence from a title alone.
+        # When an abstract is unavailable, return an explicit deterministic
+        # limitation statement instead.
+        if not record.abstract:
+            summary = _missing_abstract_summary(
+                record=record,
+                subtask=subtask,
+                max_chars=self.max_summary_chars,
+            )
+        else:
+            prompt = self._build_prompt(scored_record, subtask)
+            summary = self.gateway.generate(prompt).strip()
+
+            if not summary:
+                raise SummarisationError("LLM returned an empty evidence summary")
+
+            # High-confidence grounding guard: newly introduced acronyms or
+            # numeric claims are easy to detect and are especially risky in an
+            # academic evidence package. If the generated summary contains one
+            # that is absent from the retrieved record, fall back to a bounded
+            # extract of the source abstract rather than exporting it.
+            if _has_unsupported_high_risk_terms(summary, record):
+                summary = _extractive_abstract_fallback(
+                    record.abstract,
+                    self.max_summary_chars,
+                )
+
+            if len(summary) > self.max_summary_chars:
+                summary = _truncate_summary(summary, self.max_summary_chars)
+
         return RankedEvidence(
             record=record,
             relevance_score=scored_record.relevance_score,
@@ -75,9 +97,11 @@ Research sub-question:
 {subtask.question}
 
 Use only the bibliographic metadata and abstract supplied below. Do not invent
-methods, findings, sample sizes, quotations, or conclusions that are not present
-in the supplied evidence. If the evidence is too limited, state that limitation
-briefly.
+methods, findings, sample sizes, quotations, conclusions, named benchmarks,
+datasets, models, organisations, acronyms, metric names, or numeric values that
+are not explicitly present in the supplied evidence. If the evidence is too
+limited, state that limitation briefly. Never infer substantive findings from
+the title alone.
 
 Title: {record.title}
 Authors: {authors}
@@ -122,3 +146,54 @@ def _truncate_summary(summary: str, max_chars: int) -> str:
 
     body = body.rstrip(" ,;:-")
     return f"{body}…"
+
+
+
+def _missing_abstract_summary(
+    *,
+    record,
+    subtask: ResearchSubtask,
+    max_chars: int,
+) -> str:
+    """Return a deterministic limitation statement when no abstract exists."""
+    year = f" ({record.year})" if record.year else ""
+    text = (
+        f'The bibliographic record identifies "{record.title}"{year} as a '
+        f'potentially relevant source for the research sub-question '
+        f'"{subtask.question}". However, no abstract was available from '
+        f"{record.source}, so specific methods, metrics, datasets, findings, "
+        "and conclusions cannot be established from the retrieved evidence."
+    )
+    return _truncate_summary(text, max_chars)
+
+
+def _has_unsupported_high_risk_terms(summary: str, record) -> bool:
+    """Detect unsupported acronyms or numeric claims in generated summaries.
+
+    This intentionally checks only high-confidence terms. General semantic
+    grounding remains a limitation of generative summarisation, but newly
+    introduced acronyms and numbers are strong signals of unsupported detail.
+    """
+    source = " ".join(
+        part
+        for part in [
+            record.title,
+            record.abstract or "",
+            " ".join(record.authors),
+            record.doi or "",
+            record.url or "",
+            record.source,
+        ]
+        if part
+    ).lower()
+
+    acronyms = set(re.findall(r"\b[A-Z][A-Z0-9-]{1,}\b", summary))
+    numbers = set(re.findall(r"(?<![A-Za-z])\d+(?:\.\d+)?%?", summary))
+
+    return any(term.lower() not in source for term in acronyms | numbers)
+
+
+def _extractive_abstract_fallback(abstract: str, max_chars: int) -> str:
+    """Return source text when the generated summary fails grounding checks."""
+    text = f"Abstract evidence: {abstract.strip()}"
+    return _truncate_summary(text, max_chars)
