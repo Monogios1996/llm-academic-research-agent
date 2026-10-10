@@ -11,6 +11,8 @@ prototype.
   presentation and transcript are prepared.
 - `development-timeline.md` — concise chronology of implementation milestones,
   live failures, remediation, evaluation, and final demo completion.
+- `assessment-evidence-mapping.md` — maps repository evidence to the main
+  assessment areas for final presentation planning.
 - `orchestration-implementation.md` — bounded LangGraph control flow and
   validation/re-planning behaviour.
 - `local-fallback.md` — hosted-to-local LLM failover design and live
