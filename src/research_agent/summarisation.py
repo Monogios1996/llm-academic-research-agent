@@ -178,7 +178,7 @@ def _has_unsupported_high_risk_terms(
     introduced acronyms and numbers are strong signals of unsupported detail.
     """
     source = " ".join(
-        part
+        str(part)
         for part in [
             record.title,
             record.abstract or "",
