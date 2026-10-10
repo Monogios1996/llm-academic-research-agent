@@ -58,6 +58,7 @@ def test_summariser_preserves_score_and_traceability() -> None:
     assert "evaluation methods" in evidence.summary
     assert gateway.last_prompt is not None
     assert "Do not invent" in gateway.last_prompt
+    assert "use complete sentences" in gateway.last_prompt
 
 
 def test_summariser_rejects_empty_output() -> None:
@@ -66,6 +67,42 @@ def test_summariser_rejects_empty_output() -> None:
     with pytest.raises(SummarisationError, match="empty evidence summary"):
         summariser.summarise(_scored_record(), _subtask())
 
+
+
+def test_summariser_prefers_complete_sentence_when_truncating() -> None:
+    response = (
+        "The first sentence provides enough relevant evidence for the record. "
+        "The second sentence is intentionally much longer and would otherwise "
+        "be cut off in the middle when the character limit is applied."
+    )
+    summariser = EvidenceSummariser(
+        gateway=FakeGateway(response),
+        max_summary_chars=100,
+    )
+
+    evidence = summariser.summarise(_scored_record(), _subtask())
+
+    assert evidence.summary == (
+        "The first sentence provides enough relevant evidence for the record."
+    )
+    assert len(evidence.summary) <= 100
+
+
+def test_summariser_marks_truncation_when_no_sentence_boundary_fits() -> None:
+    response = (
+        "This deliberately long summary contains no sentence-ending punctuation "
+        "before the configured limit and therefore needs an explicit truncation "
+        "marker rather than a broken final word"
+    )
+    summariser = EvidenceSummariser(
+        gateway=FakeGateway(response),
+        max_summary_chars=100,
+    )
+
+    evidence = summariser.summarise(_scored_record(), _subtask())
+
+    assert evidence.summary.endswith("…")
+    assert len(evidence.summary) <= 100
 
 def test_summariser_truncates_unbounded_output() -> None:
     summariser = EvidenceSummariser(
