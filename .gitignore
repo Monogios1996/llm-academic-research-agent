@@ -221,3 +221,6 @@ __marimo__/
 
 # Human-approved generated research packages
 outputs/
+
+# Local runtime state
+runtime/
