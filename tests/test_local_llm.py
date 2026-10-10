@@ -93,6 +93,74 @@ def test_local_gateway_uses_json_schema_for_planner_prompt() -> None:
 
     assert output.startswith('{"subtasks"')
 
+
+def test_local_gateway_uses_structured_schema_for_evidence_summary() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = __import__("json").loads(request.content)
+        schema = body["format"]
+        assert schema["type"] == "object"
+        assert schema["required"] == ["summary"]
+        assert schema["properties"]["summary"]["type"] == "string"
+        assert schema["additionalProperties"] is False
+        prompt = body["messages"][0]["content"]
+        assert "return only JSON matching the supplied schema" in prompt
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": (
+                        '{"summary":"This record provides benchmark evidence '
+                        'for evaluating LLM planning agents."}'
+                    ),
+                }
+            },
+        )
+
+    gateway = LocalLLMGateway(
+        base_url="http://127.0.0.1:11434/api/chat",
+        model="qwen3:4b",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    output = gateway.generate(
+        "You are the evidence-summarisation component of an academic "
+        "research agent. Return plain text only."
+    )
+
+    assert output == (
+        "This record provides benchmark evidence for evaluating "
+        "LLM planning agents."
+    )
+
+
+def test_local_gateway_rejects_empty_structured_summary() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": '{"summary":"   "}',
+                }
+            },
+        )
+
+    gateway = LocalLLMGateway(
+        base_url="http://127.0.0.1:11434/api/chat",
+        model="qwen3:4b",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(
+        LLMProviderError,
+        match="empty structured summary",
+    ):
+        gateway.generate(
+            "You are the evidence-summarisation component of an academic "
+            "research agent."
+        )
+
 def test_local_gateway_strips_leaked_thinking_prefix() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
