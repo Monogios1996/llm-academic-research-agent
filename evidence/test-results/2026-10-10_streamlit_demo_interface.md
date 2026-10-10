@@ -66,3 +66,30 @@ This confirms that the browser interface exposes the existing agent workflow
 without bypassing the human-in-the-loop design. The remaining UI verification
 step is to exercise the approval/export button once and confirm that the
 existing guarded export layer creates the three expected output formats.
+
+
+## Approval and export verification
+
+The browser smoke test was completed through the final human-approval action.
+
+After the validated evidence and approval boundary were displayed, the
+**Approve & Export** button was selected. The interface confirmed:
+
+```
+Export approved. Research package created.
+```
+
+The existing guarded exporter then created all three required output formats:
+
+```
+outputs/how-are-llm-planning-agents-evaluated-in-academic-research.md
+outputs/how-are-llm-planning-agents-evaluated-in-academic-research.json
+outputs/how-are-llm-planning-agents-evaluated-in-academic-research.csv
+```
+
+This verifies the complete demonstration path from browser input through
+planning, retrieval, processing, grounded summarisation, validation, human
+review, explicit approval, and multi-format export.
+
+The Streamlit interface is therefore treated as live-verified. No additional
+UI features are required for the university-project scope.
