@@ -45,6 +45,25 @@ Latest GitHub Actions result:
 62 passed in 0.49s
 ```
 
-A repeat full controlled fallback workflow is still required to confirm that
-the live local summaries no longer contain instruction-restatement or
-reasoning-like preamble before approval/export.
+## Live verification
+
+The repeat full controlled fallback workflow completed successfully after the
+remediation.
+
+Observed result:
+
+- workflow status: `awaiting_approval`;
+- local fallback enabled with `qwen3:4b`;
+- seven fallback calls in total (one Planner call plus six summary calls);
+- two valid research subtasks;
+- five evidence items after final cross-subtask deduplication;
+- both subtask validation stages passed;
+- the workflow stopped at the human-approval boundary with no export performed;
+- the displayed summaries began directly with evidence-focused academic content
+  and no longer contained the earlier instruction-restatement or
+  reasoning-like preamble.
+
+The audit trail also confirmed that one duplicate evidence item was removed
+during final aggregation.
+
+This verifies the structured-output remediation under live local inference.
