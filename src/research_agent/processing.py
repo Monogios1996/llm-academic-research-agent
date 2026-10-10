@@ -19,21 +19,42 @@ _STOPWORDS = {
     "when", "where", "which", "with",
 }
 
+# Generic evaluation vocabulary can create false positives when a retrieved
+# record discusses unrelated datasets or metrics. Query-specific anchor terms
+# are therefore used as a conservative domain check in addition to ordinary
+# lexical coverage.
+_GENERIC_QUERY_TOKENS = {
+    "academic", "approach", "approaches", "assess", "assessment",
+    "benchmark", "benchmarks", "capabilities", "capability", "common",
+    "commonly", "dataset", "datasets", "employed", "evaluate", "evaluated",
+    "evaluating", "evaluation", "literature", "measure", "measured",
+    "measurement", "measures", "method", "methods", "metric", "metrics",
+    "performance", "reliability", "standard", "standardized", "task", "tasks",
+    "use", "used", "using",
+}
+
 
 def process_records(
     records: Iterable[AcademicRecord],
     subtask: ResearchSubtask,
     *,
     top_k: int = 10,
+    min_relevance_score: float = 0.0,
 ) -> list[ScoredRecord]:
-    """Deduplicate, score, and rank records for one research subtask."""
+    """Deduplicate, score, filter, and rank records for one research subtask."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
+    if not 0.0 <= min_relevance_score <= 1.0:
+        raise ValueError("min_relevance_score must be between 0 and 1")
 
     unique_records = deduplicate_records(records)
     scored = [
         ScoredRecord(record=record, relevance_score=relevance_score(record, subtask))
         for record in unique_records
+    ]
+    scored = [
+        item for item in scored
+        if item.relevance_score >= min_relevance_score
     ]
 
     scored.sort(
@@ -105,6 +126,19 @@ def relevance_score(record: AcademicRecord, subtask: ResearchSubtask) -> float:
     combined_coverage = len(query_tokens & combined_tokens) / len(query_tokens)
 
     score = (0.7 * title_coverage) + (0.3 * combined_coverage)
+
+    # Require some overlap with the query's more topic-specific vocabulary.
+    # A paper matching only words such as "metrics", "datasets", and
+    # "performance" can otherwise outrank a genuinely relevant domain paper.
+    anchor_tokens = query_tokens - _GENERIC_QUERY_TOKENS
+    if anchor_tokens:
+        anchor_overlap = anchor_tokens & combined_tokens
+        if not anchor_overlap:
+            score *= 0.25
+        else:
+            anchor_coverage = len(anchor_overlap) / len(anchor_tokens)
+            score += 0.15 * anchor_coverage
+
     return round(min(max(score, 0.0), 1.0), 4)
 
 
