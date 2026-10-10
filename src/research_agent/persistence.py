@@ -10,6 +10,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 
 
@@ -23,7 +24,17 @@ class SQLiteCheckpointStore:
             self.path,
             check_same_thread=False,
         )
-        self.saver = SqliteSaver(self.connection)
+        # The workflow state contains validated Pydantic domain models such as
+        # AcademicRecord. LangGraph's default msgpack serializer does not encode
+        # every custom Pydantic object directly, so the local prototype enables
+        # JsonPlusSerializer's pickle fallback for those trusted local objects.
+        # The checkpoint DB is local runtime state and must not be loaded from
+        # untrusted or externally supplied files.
+        serializer = JsonPlusSerializer(pickle_fallback=True)
+        self.saver = SqliteSaver(
+            self.connection,
+            serde=serializer,
+        )
 
     def close(self) -> None:
         """Close the underlying SQLite connection."""
