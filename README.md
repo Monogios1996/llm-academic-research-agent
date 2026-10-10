@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness has been executed successfully at 12/12 structural passes (100%, exceeding the 90% target); the final demonstration interface remains to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness has been executed successfully at 12/12 structural passes (100%, exceeding the 90% target), and a minimal single-page Streamlit demonstration interface is implemented for the final system demo.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -53,6 +53,7 @@ The workflow deliberately stops at **human approval** after all subtasks validat
 - SQLite-backed LangGraph checkpoint persistence for traceable workflow state
 - structured JSON run telemetry with run IDs, duration, status, evidence counts, fallback-call counts, and audit events
 - a fixed 12-case evaluation manifest covering clear, comparative, broad, ambiguous, agent-specific, application, and sociotechnical research requests
+- a minimal Streamlit demonstration interface that exposes the existing workflow and approval boundary without adding a second application architecture
 - GitHub Actions for reproducible automated and live-provider verification
 
 The LLM is accessed through a provider-independent gateway so that the Planner and Summariser do not depend directly on one provider client. Automated tests use deterministic test doubles so core application logic can be verified without consuming model credits or depending on network availability.
@@ -150,6 +151,36 @@ PYTHONPATH=src python -m research_agent.main \
 The complete validated result is displayed first. The CLI then asks whether export should proceed. An affirmative decision writes Markdown, JSON, and CSV files to `outputs/` by default; a negative or blank response creates nothing. Use `--output-dir` to choose another destination.
 
 
+
+## Minimal Streamlit demonstration interface
+
+The final demonstration layer is intentionally small. It exposes the same
+tested workflow used by the CLI rather than duplicating agent logic in a web
+application.
+
+Run it with:
+
+```bash
+PYTHONPATH=src streamlit run src/research_agent/streamlit_app.py
+```
+
+On Windows PowerShell from the repository root:
+
+```powershell
+$env:PYTHONPATH="src"
+py -3.11 -m streamlit run src/research_agent/streamlit_app.py
+```
+
+The single page provides a research-topic field, optional objective, a
+**Run Research Agent** button, visible plan and evidence output, run metadata,
+an audit trail, and an explicit **Approve & Export** button that only appears
+after the workflow reaches `awaiting_approval`. Checkpointing and structured
+run logging remain active behind the interface.
+
+The UI is deliberately a demonstration layer rather than a production web
+application; authentication, user management, multi-page navigation, and other
+non-assessment features are outside the project scope.
+
 ## End-to-end evaluation
 
 A fixed manifest at `evaluation/cases.json` contains 12 varied academic
@@ -194,7 +225,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **81 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, structured run telemetry, and evaluation-harness validation. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **83 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, structured run telemetry, and evaluation-harness validation. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
