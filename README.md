@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. Broader evaluation and the final demonstration interface remain to be completed.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness is implemented and awaiting live execution; the final demonstration interface remains to be completed.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
@@ -52,6 +52,7 @@ The workflow deliberately stops at **human approval** after all subtasks validat
 - pytest for automated unit and workflow tests
 - SQLite-backed LangGraph checkpoint persistence for traceable workflow state
 - structured JSON run telemetry with run IDs, duration, status, evidence counts, fallback-call counts, and audit events
+- a fixed 12-case evaluation manifest covering clear, comparative, broad, ambiguous, agent-specific, application, and sociotechnical research requests
 - GitHub Actions for reproducible automated and live-provider verification
 
 The LLM is accessed through a provider-independent gateway so that the Planner and Summariser do not depend directly on one provider client. Automated tests use deterministic test doubles so core application logic can be verified without consuming model credits or depending on network availability.
@@ -64,8 +65,9 @@ The LLM is accessed through a provider-independent gateway so that the Planner a
 ├── src/research_agent/    # application source code
 ├── tests/                 # unit and orchestration tests
 ├── docs/                  # design and implementation notes
+├── evaluation/            # fixed evaluation-case manifest
 ├── evidence/              # curated test results, example runs, logs, screenshots
-├── runtime/               # local checkpoints/run logs (generated, gitignored)
+├── runtime/               # local checkpoints/run logs/evaluation reports (generated, gitignored)
 ├── .env.example           # credential names only; never real secrets
 ├── requirements.txt
 └── README.md
@@ -147,6 +149,32 @@ PYTHONPATH=src python -m research_agent.main \
 
 The complete validated result is displayed first. The CLI then asks whether export should proceed. An affirmative decision writes Markdown, JSON, and CSV files to `outputs/` by default; a negative or blank response creates nothing. Use `--output-dir` to choose another destination.
 
+
+## End-to-end evaluation
+
+A fixed manifest at `evaluation/cases.json` contains 12 varied academic
+research requests. The evaluation criteria are intentionally structural and
+inspectable: a case passes only when the workflow reaches
+`awaiting_approval`, creates at least two plan subtasks, returns at least two
+evidence items, achieves at least 75% traceability, and finishes with passed
+evidence validation.
+
+Run a short smoke subset first:
+
+```bash
+PYTHONPATH=src python -m research_agent.evaluation --limit 3
+```
+
+Run the complete 12-case evaluation with:
+
+```bash
+PYTHONPATH=src python -m research_agent.evaluation
+```
+
+Machine-readable reports are written under `runtime/evaluation/`. The stated
+design target is at least 90% structurally error-free completion across the full
+manifest. A partial smoke run never claims that the target has been met.
+
 ## Testing status
 
 Recorded development evidence is stored under `evidence/test-results/`.
@@ -164,7 +192,7 @@ The automated suite covers:
 - global cross-subtask evidence deduplication;
 - human-approval enforcement and three-format export.
 
-The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **76 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, and structured run telemetry. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
+The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **81 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, structured run telemetry, and evaluation-harness validation. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
 ## Academic integrity and acknowledgements
 
