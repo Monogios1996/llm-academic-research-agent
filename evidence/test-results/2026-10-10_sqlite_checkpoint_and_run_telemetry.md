@@ -67,3 +67,42 @@ The latest verified GitHub Actions result after persistence and telemetry tests:
 A live local run is still required to verify that the CLI creates both the
 SQLite checkpoint database and structured JSON run log under the normal
 hosted-to-local fallback workflow.
+
+
+## First live persistence verification failure
+
+The first local live run after enabling SQLite checkpointing failed during
+LangGraph checkpoint serialization with:
+
+```
+TypeError: Type is not msgpack serializable: AcademicRecord
+```
+
+The failure occurred before the research workflow could complete. Unit tests had
+only exercised primitive checkpoint values, so they did not expose the fact that
+the real workflow state contains custom Pydantic domain objects such as
+`AcademicRecord`.
+
+## Serialization remediation
+
+The SQLite checkpoint store now uses LangGraph's `JsonPlusSerializer` with
+`pickle_fallback=True` so unsupported trusted local domain objects can be
+persisted while retaining the standard serializer for supported values.
+
+Because pickle deserialization must not be used with untrusted data, the code
+documents that the checkpoint database is trusted local runtime state and must
+not be replaced by or loaded from externally supplied files.
+
+The persistence regression test now checkpoints and reloads a real
+`AcademicRecord`, including a Pydantic `HttpUrl`, after closing and reopening
+the SQLite store.
+
+Latest GitHub Actions result:
+
+```
+76 passed in 0.73s
+```
+
+The live persistence verification should now be repeated to confirm creation of
+the SQLite checkpoint database and structured JSON run log under the complete
+research workflow.
