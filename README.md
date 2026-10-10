@@ -4,7 +4,7 @@ An LLM-powered academic research and information-gathering planning agent develo
 
 ## Project status
 
-The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness has been executed successfully at 12/12 structural passes (100%, exceeding the 90% target), and a minimal single-page Streamlit demonstration interface is implemented for the final system demo.
+The project is under active development. The prototype now implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness has been executed successfully at 12/12 structural passes (100%, exceeding the 90% target), and a minimal single-page Streamlit demonstration interface has been live-verified through the human-approval and three-format export path.
 
 Development is intentionally incremental so that Git history, tests, and execution evidence show how the prototype evolved and how identified issues were remediated.
 
