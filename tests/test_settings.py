@@ -10,6 +10,9 @@ def test_live_settings_load_required_values(monkeypatch) -> None:
     monkeypatch.setenv("HF_MODEL", "example/model")
     monkeypatch.setenv("OPENALEX_API_KEY", "oa_test")
     monkeypatch.setenv("CROSSREF_EMAIL", "student@example.org")
+    monkeypatch.delenv("LOCAL_LLM_ENABLED", raising=False)
+    monkeypatch.delenv("LOCAL_LLM_MODEL", raising=False)
+    monkeypatch.delenv("LOCAL_LLM_BASE_URL", raising=False)
 
     settings = LiveSettings.from_env()
 
@@ -29,6 +32,7 @@ def test_live_settings_uses_small_default_model(monkeypatch) -> None:
     monkeypatch.setenv("HF_TOKEN", "hf_test")
     monkeypatch.delenv("HF_MODEL", raising=False)
     monkeypatch.setenv("OPENALEX_API_KEY", "oa_test")
+    monkeypatch.delenv("LOCAL_LLM_ENABLED", raising=False)
 
     settings = LiveSettings.from_env()
 
