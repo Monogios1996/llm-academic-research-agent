@@ -46,3 +46,25 @@ def test_live_workflow_wires_local_fallback_when_enabled() -> None:
     assert isinstance(gateway.fallback, LocalLLMGateway)
     assert gateway.primary.model == "example/model"
     assert gateway.fallback.model == "qwen3:4b"
+
+
+def test_live_workflow_wires_sqlite_checkpoint_store(tmp_path) -> None:
+    settings = LiveSettings(
+        hf_token="hf_test",
+        hf_model="example/model",
+        openalex_api_key="oa_test",
+    )
+    checkpoint_path = tmp_path / "state" / "checkpoints.sqlite3"
+
+    workflow = build_live_workflow(
+        settings,
+        checkpoint_db=str(checkpoint_path),
+    )
+
+    try:
+        assert workflow.checkpoint_store is not None
+        assert workflow.checkpointer is workflow.checkpoint_store.saver
+        assert workflow.checkpoint_store.path == checkpoint_path
+        assert checkpoint_path.exists()
+    finally:
+        workflow.close()
