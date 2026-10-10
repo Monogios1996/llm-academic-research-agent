@@ -57,3 +57,37 @@ Latest verified GitHub Actions result after the substantive change:
 
 A repeat live fallback run is required to confirm the behaviour under local
 Qwen3 inference before this remediation is considered fully verified.
+
+
+## First live verification failure after grounding change
+
+The first live fallback verification after this remediation did not complete.
+Automated tests passed locally (`70 passed`), but the live summarisation stage
+raised:
+
+```
+TypeError: sequence item 4: expected str instance, HttpUrl found
+```
+
+The failure occurred in the new grounding guard while building a searchable
+metadata string. Pydantic stores `AcademicRecord.url` as an `HttpUrl`
+object, and the new guard attempted to join it directly with ordinary strings.
+
+This was a genuine integration defect that the existing unit fixtures had not
+exercised because they did not include a populated URL on the guarded path.
+
+## HttpUrl remediation
+
+The grounding guard now normalises each metadata component with `str(...)`
+before joining it. A regression test was added with a real Pydantic
+`HttpUrl` value to ensure the guarded summarisation path handles URL metadata
+without failure.
+
+Latest GitHub Actions result:
+
+```
+71 passed in 0.67s
+```
+
+The live fallback verification should now be repeated. The grounding
+remediation remains unverified end-to-end until that run completes.
