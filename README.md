@@ -240,6 +240,10 @@ The automated suite covers:
 
 The automated suite has grown incrementally alongside the implementation. Current GitHub Actions verification reports **83 tests passing**, including planner contracts, provider failover, grounded summarisation safeguards, relevance filtering, deduplication, human approval/export enforcement, persisted workflow thread state, SQLite checkpoint reopen behaviour, structured run telemetry, and evaluation-harness validation. Live-provider and local-fallback verification remain intentionally separate from unit testing so mocked tests are not presented as evidence of live external execution.
 
+## Generative AI Use Declaration
+
+Generative AI was used as a development support tool to assist with diagnosing errors and identifying testing and remediation options. Any changes were reviewed, executed, and tested by me, who was responsible for the final architecture, design decisions, evaluation of results, verification of system behaviour, and submitted work. Generative AI was not used to fabricate testing evidence, results, or academic references.
+
 ## Academic integrity and acknowledgements
 
 External libraries, frameworks, models, APIs, and academic sources used by the implementation are acknowledged here and, where appropriate, in code commentary.
