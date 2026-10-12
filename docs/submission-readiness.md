@@ -59,13 +59,13 @@ record; screenshots should support that record rather than replace it.
 - [ ] Perform one final local `git pull` and `pytest -q` after documentation
       cleanup.
 - [ ] Confirm the repository working tree is clean.
-- [ ] Select/crop the clearest screenshots for the presentation.
+- [x] Select/crop the clearest screenshots for the presentation.
 - [ ] Confirm the University's required AI-use declaration wording and apply it
       accurately. The implementation used substantial AI assistance, so the
       declaration must follow the module/university rules rather than claiming
       unaided authorship.
-- [ ] Prepare the maximum-10-slide presentation.
-- [ ] Prepare the matching presentation transcript.
+- [x] Prepare the maximum-10-slide presentation.
+- [x] Prepare the matching presentation transcript.
 
-The presentation and transcript are intentionally left until the repository and
-evidence package are final.
+The presentation and transcript have now been prepared. The remaining checks are
+final repository verification and accurate completion of the required AI-use declaration.
