@@ -113,8 +113,8 @@ Primary evidence:
 ## Sources, acknowledgement, and integrity
 
 External technologies and APIs are acknowledged in the README and design
-documentation. Academic references from the Unit 6 proposal should be reused
-where they support final design commentary.
+documentation. The README now also includes the main academic references used
+to support the agent-oriented design and reasoning approach.
 
 Before final submission, the module-specific rules on generative-AI assistance
 must be checked and any required declaration must accurately acknowledge the
