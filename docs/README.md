@@ -7,8 +7,8 @@ prototype.
   persistence, interface, and design-to-implementation mapping.
 - `critical-evaluation.md` — design trade-offs, observed failures,
   remediation decisions, limitations, and future work.
-- `submission-readiness.md` — final requirement/evidence checklist before the
-  presentation and transcript are prepared.
+- `submission-readiness.md` — final requirement/evidence checklist for the
+  completed implementation, presentation, and transcript package.
 - `development-timeline.md` — concise chronology of implementation milestones,
   live failures, remediation, evaluation, and final demo completion.
 - `assessment-evidence-mapping.md` — maps repository evidence to the main
