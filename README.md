@@ -2,6 +2,12 @@
 
 An LLM-powered academic research and information-gathering planning agent developed for the University of Essex Online **Intelligent Agents** module.
 
+## Repository
+
+GitHub repository: https://github.com/Monogios1996/llm-academic-research-agent
+
+The repository commit history records the incremental development, testing, and remediation of the project across the module.
+
 ## Project status
 
 The implementation is feature-complete for the university-project scope. The prototype implements planning, structured academic retrieval, deterministic processing/ranking, grounded summarisation safeguards, evidence validation, bounded LangGraph orchestration, a live Hugging Face provider gateway with verified Ollama fallback, explicit human approval, guarded Markdown/JSON/CSV export, SQLite-backed LangGraph checkpoints, and structured JSON run telemetry. The fixed 12-case evaluation harness has been executed successfully at 12/12 structural passes (100%, exceeding the 90% target), and a minimal single-page Streamlit demonstration interface has been live-verified through the human-approval and three-format export path.
