@@ -13,3 +13,8 @@ The main chronological records are under `test-results/`. Local generated
 runtime files such as SQLite checkpoints, JSON run logs, evaluation reports,
 and approved research-package exports remain gitignored; reviewed outcomes are
 summarised in the committed evidence notes instead.
+
+## Final browser demonstration screenshots
+
+- [Human approval boundary](screenshots/streamlit_approval_boundary.png) — validated evidence is visible while the workflow remains at `awaiting_approval`, with explicit approval required before export.
+- [Approved export confirmation](screenshots/streamlit_approved_export.png) — successful Markdown, JSON, and CSV export after explicit human approval.
