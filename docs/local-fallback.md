@@ -39,7 +39,7 @@ Qwen3's `/no_think` soft switch. It also defensively strips a leaked leading
 thinking block if the local runtime still places one in `message.content`.
 Only the final answer is passed into Planner or Summariser.
 
-and the default model name is:
+The default model name is:
 
 ```
 qwen3:4b
