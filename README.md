@@ -256,4 +256,10 @@ Current external technologies and documentation include:
 - httpx: https://www.python-httpx.org/
 - pytest: https://docs.pytest.org/
 
-Academic references from the Unit 6 design proposal will be carried into the final submission documentation where they support design and implementation decisions.
+### Academic references supporting the design
+
+The following academic sources informed the agent-oriented design, deliberative planning approach, and reasoning/action workflow used in the project:
+
+- Bratman, M.E. (1987) *Intention, Plans, and Practical Reason*. Cambridge, MA: Harvard University Press.
+- Wooldridge, M. (2009) *An Introduction to MultiAgent Systems*. 2nd edn. Chichester: Wiley.
+- Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K. and Cao, Y. (2023) ‘ReAct: Synergizing reasoning and acting in language models’, *International Conference on Learning Representations (ICLR)*. Available at: https://openreview.net/forum?id=WE_vluYUL-X (Accessed: 12 October 2026).
